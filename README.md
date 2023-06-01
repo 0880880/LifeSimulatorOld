@@ -9,5 +9,5 @@ The Life Simulator is a life simulation engine that allows you to simulate creat
 
 - Communication: The creatures can communicate with each other by sending signals when touching each other.
 
-# License
+## License
 The Life Simulator is open-source software released under the MIT License. Feel free to use, modify, and distribute it as per the terms of the license.
