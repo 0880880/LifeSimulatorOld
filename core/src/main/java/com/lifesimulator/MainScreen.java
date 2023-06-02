@@ -168,7 +168,7 @@ public class MainScreen implements Screen {
 	void updateCreatures() {
 		for (int i = 0; i < creatures.size; i++) {
 			Creature creature = creatures.get(i);
-			if (creature.energy > creatureBaseEnergy.get() + 20 && MathUtils.randomBoolean(.01f + ((creature.energy - 7f) / 24f)) && creatures.size < 1000) {
+			if (creature.energy > creatureBaseEnergy.get() + 20 && MathUtils.randomBoolean(.01f + ((creature.energy - 7f) / 24f)) && creatures.size < maxCreatures.get()) {
 				addCreature(creatures, new Creature(creature, MathUtils.random(0,256), MathUtils.random(0, 256)));
 				creature.energy -= creatureBaseEnergy.get() + 4;
 			}
