@@ -72,6 +72,7 @@ public class MainScreen implements Screen {
 
 		timer = 0;
 
+        food.clear();
 		obstacles.clear();
 		creatures.clear();
 		creaturesIndex.clear();
@@ -193,10 +194,6 @@ public class MainScreen implements Screen {
 		if (otimer % obstacleSpawnInterval.get() == 0) {
 			obstacles.add(new Circle(MathUtils.random(0,256), MathUtils.random(0,256), MathUtils.random(1,10)));
 		}
-		if (otimer % 1000 == 0) {
-			population = new float[1];
-			population[0] = creatures.size;
-		}
 		if (timer >= foodSpawnInterval.get()) {
 			timer -= foodSpawnInterval.get();
 			for (int k = 0; k < foodSpawnAmount.get(); k++) {
@@ -205,15 +202,15 @@ public class MainScreen implements Screen {
 		}
 
 		ArrayList<Float> newPopulation = new ArrayList<>();
-		for (int k = 0; k < population.length; k++) {
-			newPopulation.add(population[k]);
-		}
-		newPopulation.add((float) creatures.size);
-		float[] b = new float[newPopulation.size()];
-		for (int k = 0; k < newPopulation.size(); k++) {
-			b[k] = newPopulation.get(k);
-		}
-		population = b;
+        for (int k = (population.length < 200 ? 0 : 1); k < population.length; k++) {
+            newPopulation.add(population[k]);
+        }
+        newPopulation.add((float) creatures.size);
+        float[] b = new float[newPopulation.size()];
+        for (int k = 0; k < newPopulation.size(); k++) {
+            b[k] = newPopulation.get(k);
+        }
+        population = b;
 	}
 
 	@Override
