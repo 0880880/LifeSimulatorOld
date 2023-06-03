@@ -27,6 +27,7 @@ import space.earlygrey.shapedrawer.ShapeDrawer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Vector;
 
 import static com.lifesimulator.Statics.*;
 
@@ -152,13 +153,15 @@ public class MainScreen implements Screen {
 
 	void addFood(Vector2 food) {
 		boolean isInsideObstacle = false;
-		for (Circle obstacle : obstacles) {
+        for (int i = 0; i < obstacles.size; i++) {
+            Circle obstacle = obstacles.get(i);
 			isInsideObstacle |= obstacle.contains(food);
 		}
 		while (isInsideObstacle) {
 			isInsideObstacle = false;
 			food.set(new Vector2(MathUtils.random(0,256), MathUtils.random(0, 256)));
-			for (Circle obstacle : obstacles) {
+            for (int i = 0; i < obstacles.size; i++) {
+                Circle obstacle = obstacles.get(i);
 				isInsideObstacle |= obstacle.contains(food);
 			}
 		}
@@ -245,17 +248,20 @@ public class MainScreen implements Screen {
 
 		if (enableRendering.get()) {
 
-			for (Circle obstacle : obstacles) {
+			for (int i = 0; i < obstacles.size; i++) {
+                Circle obstacle = obstacles.get(i);
 				if (obstacle != null) {
 					drawer.filledCircle(obstacle.x, obstacle.y, obstacle.radius, Color.BLACK);
 				}
 			}
 
-			for (Vector2 f : food) {
+            for (int i = 0; i < food.size; i++) {
+                Vector2 f = food.get(i);
 				drawer.filledCircle(f.x, f.y, 1, Color.RED);
 			}
 
-			for (Creature creature : creatures) {
+            for (int i = 0; i < creatures.size; i++) {
+                Creature creature = creatures.get(i);
 				drawer.filledRectangle(creature.x, creature.y, 1, 1, creature.color);
 
 			}
