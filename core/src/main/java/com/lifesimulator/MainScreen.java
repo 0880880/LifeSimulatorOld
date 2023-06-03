@@ -204,6 +204,15 @@ public class MainScreen implements Screen {
 			}
 		}
 
+        if (obstacleMovement.get()) {
+            if (otimer % 30 == 0) {
+                for (int i = 0; i < obstacles.size; i++) {
+                    Circle obstacle = obstacles.get(i);
+                    obstacle.setPosition(obstacle.x + MathUtils.random(-1, 1), obstacle.y + MathUtils.random(-1, 1));
+                }
+            }
+        }
+
 		ArrayList<Float> newPopulation = new ArrayList<>();
         for (int k = (population.length < 200 ? 0 : 1); k < population.length; k++) {
             newPopulation.add(population[k]);
@@ -277,6 +286,7 @@ public class MainScreen implements Screen {
 
 		ImGui.begin("Debug");
 
+        ImGui.checkbox("Obstacle Movement", obstacleMovement);
 		ImGui.setNextItemWidth(120);
 		ImGui.inputInt("Number of hidden neurons", numberOfHiddenNeurons);
 		ImGui.setNextItemWidth(120);

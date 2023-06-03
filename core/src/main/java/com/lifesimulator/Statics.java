@@ -3,6 +3,7 @@ package com.lifesimulator;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
+import imgui.type.ImBoolean;
 import imgui.type.ImFloat;
 import imgui.type.ImInt;
 import space.earlygrey.shapedrawer.ShapeDrawer;
@@ -14,6 +15,7 @@ public class Statics {
     public static ExtendViewport viewport;
     public static OrthographicCamera camera;
 
+    public static ImBoolean obstacleMovement = new ImBoolean(true);
     public static ImInt numberOfHiddenNeurons = new ImInt(20);
     public static ImFloat mutationRate = new ImFloat(.008f);
     public static ImFloat learningRate = new ImFloat(.001f);
