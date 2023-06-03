@@ -58,7 +58,6 @@ public class MainScreen implements Screen {
 	public final ImGuiImplGlfw imGuiGlfw = new ImGuiImplGlfw();
 	public final ImGuiImplGl3 imGuiGl3 = new ImGuiImplGl3();
 
-	public ImInt nFramesToSimulate = new ImInt(10);
 	ImBoolean enableRendering = new ImBoolean(true);
 
 	int otimer = 0;
@@ -330,10 +329,6 @@ public class MainScreen implements Screen {
 
 		ImGui.beginDisabled(threaded);
 
-		ImGui.setNextItemWidth(120);
-		ImGui.inputInt("Number of frames to simulate (x1000)", nFramesToSimulate);
-		ImGui.spacing();
-
 		/*if (ImGui.button("Simulate Multithreaded (WIP)")) {
 			Array<Creature> creaturesCloned = new Array<>();
 			creaturesCloned.addAll(creatures);
@@ -402,13 +397,10 @@ public class MainScreen implements Screen {
 		if (ImGui.button("Simulate")) {
 			stopSimulation = false;
 			new Thread(() -> {
-				for (int j = 0; j < 1000 * nFramesToSimulate.get(); j++) {
-					threaded = true;
-					if (stopSimulation) {
-						break;
-					}
-					simulate();
-				}
+				while (!stopSimulation) {
+                    threaded = true;
+                    simulate();
+                }
 				threaded = false;
 			}).start();
 		}
