@@ -39,7 +39,7 @@ public class Creature {
         color = new Color(MathUtils.random(0f,1f),MathUtils.random(0f,1f),MathUtils.random(0f,1f),1f);
         init(x, y);
         genome = new Genome(20);
-        brain = new Brain(2 + rays * (eye ? 3 : 0) + 4 + 1 + 4, 20, 2 + 4);
+        brain = new Brain(2 + rays * (eye ? 3 : 0) + 4 + 1 + 4, 20, 2 + 2);
         totalNeurons = brain.neurons.size;
     }
     public Creature(Creature creatureA, int x, int y) {
@@ -111,15 +111,13 @@ public class Creature {
 
     boolean eye = true;
 
-    public double senderTop = 0;
-    public double senderBottom = 0;
-    public double senderLeft = 0;
-    public double senderRight = 0;
+    public double sender0 = 0;
+    public double sender1 = 0;
 
     public void update(HashMap<Index, Creature> creaturesIndex, Array<Creature> creatures, Array<Creature>[][] chunks, Array<Circle> obstacles, Array<Vector2> food, ShapeDrawer drawer, boolean enableRendering) {
         frameCounter++;
 
-        double[] inputs = new double[2 + (rays * (eye ? 3 : 0)) + 4 + 1 + 4];
+        double[] inputs = new double[2 + (rays * (eye ? 3 : 0)) + 4 + 1 + 2];
         //inputs[0] = x / 256.0;
         //inputs[1] = y / 256.0;
         int idx = 0;
@@ -167,14 +165,18 @@ public class Creature {
         // COMMUNICATION
 
         tempIndex1.y = y + 1;
-        inputs[2 + (rays * (eye ? 3 : 0)) + 3 + 1 + 1] = (creaturesIndex.containsKey(tempIndex1) ? creaturesIndex.get(tempIndex1).senderTop : 0);
+        inputs[2 + (rays * (eye ? 3 : 0)) + 3 + 1 + 1] = (creaturesIndex.containsKey(tempIndex1) ? creaturesIndex.get(tempIndex1).sender0 : 0);
+        inputs[2 + (rays * (eye ? 3 : 0)) + 3 + 1 + 2] = (creaturesIndex.containsKey(tempIndex1) ? creaturesIndex.get(tempIndex1).sender1 : 0);
         tempIndex1.y = y - 1;
-        inputs[2 + (rays * (eye ? 3 : 0)) + 3 + 1 + 2] = (creaturesIndex.containsKey(tempIndex1) ? creaturesIndex.get(tempIndex1).senderBottom : 0);
+        inputs[2 + (rays * (eye ? 3 : 0)) + 3 + 1 + 1] = (creaturesIndex.containsKey(tempIndex1) ? creaturesIndex.get(tempIndex1).sender0 : 0);
+        inputs[2 + (rays * (eye ? 3 : 0)) + 3 + 1 + 2] = (creaturesIndex.containsKey(tempIndex1) ? creaturesIndex.get(tempIndex1).sender1 : 0);
         tempIndex1.x = x + 1;
         tempIndex1.y = y;
-        inputs[2 + (rays * (eye ? 3 : 0)) + 3 + 1 + 3] = (creaturesIndex.containsKey(tempIndex1) ? creaturesIndex.get(tempIndex1).senderLeft : 0);
+        inputs[2 + (rays * (eye ? 3 : 0)) + 3 + 1 + 1] = (creaturesIndex.containsKey(tempIndex1) ? creaturesIndex.get(tempIndex1).sender0 : 0);
+        inputs[2 + (rays * (eye ? 3 : 0)) + 3 + 1 + 2] = (creaturesIndex.containsKey(tempIndex1) ? creaturesIndex.get(tempIndex1).sender1 : 0);
         tempIndex1.x = x - 1;
-        inputs[2 + (rays * (eye ? 3 : 0)) + 3 + 1 + 4] = (creaturesIndex.containsKey(tempIndex1) ? creaturesIndex.get(tempIndex1).senderRight : 0);
+        inputs[2 + (rays * (eye ? 3 : 0)) + 3 + 1 + 1] = (creaturesIndex.containsKey(tempIndex1) ? creaturesIndex.get(tempIndex1).sender0 : 0);
+        inputs[2 + (rays * (eye ? 3 : 0)) + 3 + 1 + 2] = (creaturesIndex.containsKey(tempIndex1) ? creaturesIndex.get(tempIndex1).sender1 : 0);
 
         double[] outputs = brain.get(inputs);
 
@@ -188,10 +190,7 @@ public class Creature {
         if (outputs[1] < -.5f)
             y--;
 
-        senderTop = outputs[2];
-        senderBottom = outputs[3];
-        senderLeft = outputs[4];
-        senderRight = outputs[5];
+        sender0 = outputs[2];
 
         if (oldPosition.x != x && oldPosition.y != y) {
             moveMeter++;
