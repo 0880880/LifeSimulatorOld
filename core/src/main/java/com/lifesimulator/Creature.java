@@ -38,8 +38,8 @@ public class Creature {
     public Creature(int x, int y) {
         color = new Color(MathUtils.random(0f,1f),MathUtils.random(0f,1f),MathUtils.random(0f,1f),1f);
         init(x, y);
-        genome = new Genome(20);
-        brain = new Brain(2 + rays * (eye ? 3 : 0) + 4 + 1 + 4, 20, 2 + 2);
+        genome = new Genome(Statics.numberOfHiddenNeurons.get());
+        brain = new Brain(2 + Statics.visionRays.get() * (eye ? 3 : 0) + 4 + 1 + 4, 20, 2 + 2);
         totalNeurons = brain.neurons.size;
     }
     public Creature(Creature creatureA, int x, int y) {
@@ -77,31 +77,23 @@ public class Creature {
 
     int frameCounter = 0;
 
-    int rayResolution = 16;
-    int rayLength = 12;
-    int rays = 20;
-
     Index tempIndex = new Index();
-    Index tempIndex1 = new Index();
 
-    boolean checkDst(HashMap<Index, Creature> creaturesIndex, Array<Circle> obstacles, double[] inputs, int idx, int offX, int offY, Vector2 position, Array<Vector2> food) {
-        tempIndex.x = (int) position.x;
-        tempIndex.y = (int) position.y;
+    Vector2 temp = new Vector2();
+
+    boolean checkIntersection(HashMap<Index, Creature> creaturesIndex, Array<Circle> obstacles, double[] inputs, int idx, Vector2 start, Vector2 end, Array<Vector2> food) {
         boolean det = false;
-        if (creaturesIndex.containsKey(tempIndex)) {
-            inputs[2 + idx * 3] = 1.0;
-            det = true;
-        }
         for (int j = 0; j < obstacles.size; j++) {
             Circle obstacle = obstacles.get(j);
-            if (obstacle != null && obstacle.contains(position)) {
+            temp.set(obstacle.x, obstacle.y);
+            if (Utils.intersect(start, end, temp, obstacle.radius)) {
                 inputs[2 + idx * 3 + 1] = 1.0;
                 det = true;
             }
         }
         for (int j = 0; j < food.size; j++) {
             Vector2 f = food.get(j);
-            if (f != null && f.dst2(position) <= 2f) {
+            if (f != null && Utils.intersect(start, end, f, 2)) {
                 inputs[2 + idx * 3 + 2] = 1.0;
                 det = true;
             }
@@ -114,69 +106,57 @@ public class Creature {
     public double sender0 = 0;
     public double sender1 = 0;
 
-    public void update(HashMap<Index, Creature> creaturesIndex, Array<Creature> creatures, Array<Creature>[][] chunks, Array<Circle> obstacles, Array<Vector2> food, ShapeDrawer drawer, boolean enableRendering) {
+    public void update(HashMap<Index, Creature> creaturesIndex, Array<Creature> creatures, Array<Circle> obstacles, Array<Vector2> food, ShapeDrawer drawer, boolean enableRendering) {
         frameCounter++;
 
-        double[] inputs = new double[2 + (rays * (eye ? 3 : 0)) + 4 + 1 + 2];
-        //inputs[0] = x / 256.0;
-        //inputs[1] = y / 256.0;
+        double[] inputs = new double[2 + (Statics.visionRays.get() * (eye ? 3 : 0)) + 4 + 1 + 2];
+        inputs[0] = x / 256.0;
+        inputs[1] = y / 256.0;
         int idx = 0;
         // EYE
         if (eye) {
-            for (int d = 0; d < 360; d += (360 / (rays - 1))) {
+            for (int d = 0; d < 360; d += (360 / (Statics.visionRays.get() - 1))) {
                 float dir = d * MathUtils.degRad;
-                for (int i = rayResolution - 1; i >= 0; i--) {
-                    Vector2 position = new Vector2(x, y);
-                    position.x += MathUtils.cos(dir) * ((i / (float) rayResolution) * rayLength);
-                    position.y += MathUtils.sin(dir) * ((i / (float) rayResolution) * rayLength);
-                    //drawer.line(x - 128, y - 128, x - 128 + MathUtils.cos(dir) * ((i / (float) rayResolution) * rayLength), y - 128 + MathUtils.sin(dir) * ((i / (float) rayResolution) * rayLength), Color.RED, .1f);
-                    if (checkDst(creaturesIndex, obstacles, inputs, idx, 0, 0, position, food))
-                        break;
-                    //checkDst(creaturesIndex, obstacles, inputs, idx, 1, 0, position);
-                    //checkDst(creaturesIndex, obstacles, inputs, idx, -1, 0, position);
-                    //checkDst(creaturesIndex, obstacles, inputs, idx, 0, 1, position);
-                    //checkDst(creaturesIndex, obstacles, inputs, idx, 0, -1, position);
-
-                    /*checkDst(chunks, inputs, idx, 1, 1, position);
-                    checkDst(chunks, inputs, idx, 1, -1, position);
-                    checkDst(chunks, inputs, idx, -1, 1, position);
-                    checkDst(chunks, inputs, idx, -1, 1, position);*/
-                }
+                Vector2 end = new Vector2(x, y);
+                end.x += MathUtils.cos(dir) * Statics.visionRange.get();
+                end.y += MathUtils.sin(dir) * Statics.visionRange.get();
+                if (checkIntersection(creaturesIndex, obstacles, inputs, idx, new Vector2(x, y), end, food))
+                    break;
                 idx++;
             }
         }
 
         // TOUCH
-        tempIndex1.x = x + 1;
-        tempIndex1.y = y;
-        inputs[2 + (rays * (eye ? 3 : 0))] = creaturesIndex.containsKey(tempIndex1) ? 1 : 0;
-        tempIndex1.x = x - 1;
-        inputs[2 + (rays * (eye ? 3 : 0)) + 1] = creaturesIndex.containsKey(tempIndex1) ? 1 : 0;
-        tempIndex1.x = x;
-        tempIndex1.y = y + 1;
-        inputs[2 + (rays * (eye ? 3 : 0)) + 2] = creaturesIndex.containsKey(tempIndex1) ? 1 : 0;
-        tempIndex1.y = y - 1;
-        inputs[2 + (rays * (eye ? 3 : 0)) + 3] = creaturesIndex.containsKey(tempIndex1) ? 1 : 0;
+        tempIndex.x = x + 1;
+        tempIndex.y = y;
+        inputs[2 + (Statics.visionRays.get() * (eye ? 3 : 0))] = creaturesIndex.containsKey(tempIndex) ? 1 : 0;
+        tempIndex.x = x - 1;
+        inputs[2 + (Statics.visionRays.get() * (eye ? 3 : 0)) + 1] = creaturesIndex.containsKey(tempIndex) ? 1 : 0;
+        tempIndex.x = x;
+        tempIndex.y = y + 1;
+        inputs[2 + (Statics.visionRays.get() * (eye ? 3 : 0)) + 2] = creaturesIndex.containsKey(tempIndex) ? 1 : 0;
+        tempIndex.y = y - 1;
+        inputs[2 + (Statics.visionRays.get() * (eye ? 3 : 0)) + 3] = creaturesIndex.containsKey(tempIndex) ? 1 : 0;
 
         // CLOCK
 
-        inputs[2 + (rays * (eye ? 3 : 0)) + 3 + 1] = clock ? -1 : 1;
+        inputs[2 + (Statics.visionRays.get() * (eye ? 3 : 0)) + 3 + 1] = clock ? -1 : 1;
 
         // COMMUNICATION
 
-        tempIndex1.y = y + 1;
-        inputs[2 + (rays * (eye ? 3 : 0)) + 3 + 1 + 1] = (creaturesIndex.containsKey(tempIndex1) ? creaturesIndex.get(tempIndex1).sender0 : 0);
-        inputs[2 + (rays * (eye ? 3 : 0)) + 3 + 1 + 2] = (creaturesIndex.containsKey(tempIndex1) ? creaturesIndex.get(tempIndex1).sender1 : 0);
-        tempIndex1.y = y - 1;
-        inputs[2 + (rays * (eye ? 3 : 0)) + 3 + 1 + 1] = (creaturesIndex.containsKey(tempIndex1) ? creaturesIndex.get(tempIndex1).sender0 : 0);
-        inputs[2 + (rays * (eye ? 3 : 0)) + 3 + 1 + 2] = (creaturesIndex.containsKey(tempIndex1) ? creaturesIndex.get(tempIndex1).sender1 : 0);
-        tempIndex1.x = x + 1;
-        tempIndex1.y = y;
-        inputs[2 + (rays * (eye ? 3 : 0)) + 3 + 1 + 1] = (creaturesIndex.containsKey(tempIndex1) ? creaturesIndex.get(tempIndex1).sender0 : 0);
-        inputs[2 + (rays * (eye ? 3 : 0)) + 3 + 1 + 2] = (creaturesIndex.containsKey(tempIndex1) ? creaturesIndex.get(tempIndex1).sender1 : 0);
-        tempIndex1.x = x - 1;
-        inputs[2 + (rays * (eye ? 3 : 0)) + 3 + 1 + 1] = (creaturesIndex.containsKey(tempIndex1) ? creaturesIndex.get(tempIndex1).sender0 : 0);
-        inputs[2 + (rays * (eye ? 3 : 0)) + 3 + 1 + 2] = (creaturesIndex.containsKey(tempIndex1) ? creaturesIndex.get(tempIndex1).sender1 : 0);
+        tempIndex.y = y + 1;
+        inputs[2 + (Statics.visionRays.get() * (eye ? 3 : 0)) + 3 + 1 + 1] = (creaturesIndex.containsKey(tempIndex) ? creaturesIndex.get(tempIndex).sender0 : 0);
+        inputs[2 + (Statics.visionRays.get() * (eye ? 3 : 0)) + 3 + 1 + 2] = (creaturesIndex.containsKey(tempIndex) ? creaturesIndex.get(tempIndex).sender1 : 0);
+        tempIndex.y = y - 1;
+        inputs[2 + (Statics.visionRays.get() * (eye ? 3 : 0)) + 3 + 1 + 1] = (creaturesIndex.containsKey(tempIndex) ? creaturesIndex.get(tempIndex).sender0 : 0);
+        inputs[2 + (Statics.visionRays.get() * (eye ? 3 : 0)) + 3 + 1 + 2] = (creaturesIndex.containsKey(tempIndex) ? creaturesIndex.get(tempIndex).sender1 : 0);
+        tempIndex.x = x + 1;
+        tempIndex.y = y;
+        inputs[2 + (Statics.visionRays.get() * (eye ? 3 : 0)) + 3 + 1 + 1] = (creaturesIndex.containsKey(tempIndex) ? creaturesIndex.get(tempIndex).sender0 : 0);
+        inputs[2 + (Statics.visionRays.get() * (eye ? 3 : 0)) + 3 + 1 + 2] = (creaturesIndex.containsKey(tempIndex) ? creaturesIndex.get(tempIndex).sender1 : 0);
+        tempIndex.x = x - 1;
+        inputs[2 + (Statics.visionRays.get() * (eye ? 3 : 0)) + 3 + 1 + 1] = (creaturesIndex.containsKey(tempIndex) ? creaturesIndex.get(tempIndex).sender0 : 0);
+        inputs[2 + (Statics.visionRays.get() * (eye ? 3 : 0)) + 3 + 1 + 2] = (creaturesIndex.containsKey(tempIndex) ? creaturesIndex.get(tempIndex).sender1 : 0);
 
         double[] outputs = brain.get(inputs);
 
@@ -221,8 +201,8 @@ public class Creature {
                 break;
             }
         }
-        x = MathUtils.clamp(x, 0, 256);
-        y = MathUtils.clamp(y, 0, 256);
+        x = MathUtils.clamp(x, 0, Statics.mapSize);
+        y = MathUtils.clamp(y, 0, Statics.mapSize);
         for (int i = 0; i < creatures.size; i++) {
             Creature creature = creatures.get(i);
             if (creature != this) {
@@ -234,13 +214,13 @@ public class Creature {
                 }
             }
         }
-        if (!hit && x <= 256 && y <= 256) {
+        if (!hit && x <= Statics.mapSize && y <= Statics.mapSize) {
             creaturesIndex.remove(new Index((int) oldPosition.x, (int) oldPosition.y));
             creaturesIndex.put(new Index(x, y), this);
         }
 
-        x = MathUtils.clamp(x, 0, 256);
-        y = MathUtils.clamp(y, 0, 256);
+        x = MathUtils.clamp(x, 0, Statics.mapSize);
+        y = MathUtils.clamp(y, 0, Statics.mapSize);
 
         //if (enableRendering) drawer.line(x - 128, y - 128, x - 128 + MathUtils.cos(getRealDirection() / 4f * MathUtils.PI2) * 10, y - 128 + MathUtils.sin(getRealDirection() / 4f * MathUtils.PI2) * 10, Color.RED, .5f);
 
