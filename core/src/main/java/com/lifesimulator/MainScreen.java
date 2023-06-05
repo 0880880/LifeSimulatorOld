@@ -7,6 +7,7 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.Circle;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -15,6 +16,7 @@ import imgui.extension.implot.ImPlot;
 import imgui.gl3.ImGuiImplGl3;
 import imgui.glfw.ImGuiImplGlfw;
 import imgui.type.ImBoolean;
+import it.aretesoftware.quadtree.QuadTreeItem;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
@@ -61,6 +63,8 @@ public class MainScreen implements Screen {
 		creatures.clear();
 		creaturesIndex.clear();
 
+        quadTreeRoot.clear();
+
 		population = new float[] {maxCreatures.get()};
 
 		for (int i = 0; i < 20; i++) {
@@ -68,7 +72,11 @@ public class MainScreen implements Screen {
 		}
 
 		for (int i = 0; i < maxCreatures.get(); i++) {
-            Utils.addCreature(creatures, new Creature(MathUtils.random(0, mapSize), MathUtils.random(0, mapSize)));
+            Creature c = new Creature(MathUtils.random(0, mapSize), MathUtils.random(0, mapSize));
+            Utils.addCreature(creatures, c);
+            QuadTreeItem<Creature> item = quadTreeRoot.obtainItem();
+            item.init(c, new Rectangle(c.x, c.y, 1, 1));
+            quadTreeRoot.insert(item);
 			creaturesIndex.put(new Index(creatures.peek().x, creatures.peek().y), creatures.peek());
 		}
 
@@ -103,7 +111,8 @@ public class MainScreen implements Screen {
         for (int i = 0; i < creatures.size; i++) {
             Creature creature = creatures.get(i);
             if (creature.energy > creatureBaseEnergy.get() + 20 && MathUtils.randomBoolean(.01f + ((creature.energy - 7f) / 24f)) && creatures.size < maxCreatures.get()) {
-                Utils.addCreature(creatures, new Creature(creature, MathUtils.random(0,mapSize), MathUtils.random(0, mapSize)));
+                Creature c = new Creature(creature, MathUtils.random(0,mapSize), MathUtils.random(0, mapSize));
+                Utils.addCreature(creatures, c);
                 creature.energy -= creatureBaseEnergy.get() + 4;
             }
             creature.update(creaturesIndex, creatures, obstacles, food, drawer, false);
@@ -111,6 +120,13 @@ public class MainScreen implements Screen {
                 creatures.removeIndex(i);
                 creaturesIndex.remove(new Index(creature.x, creature.y));
             }
+        }
+        quadTreeRoot.clear();
+        for (int i = 0; i < creatures.size; i++) {
+            Creature c = creatures.get(i);
+            QuadTreeItem<Creature> item = quadTreeRoot.obtainItem();
+            item.init(c, new Rectangle(c.x, c.y, 1, 1));
+            quadTreeRoot.insert(item);
         }
 	}
 
@@ -176,6 +192,8 @@ public class MainScreen implements Screen {
         population = b;
 	}
 
+    public static float[] eye = new float[20];
+
 	@Override
 	public void render(float delta) {
 
@@ -220,10 +238,12 @@ public class MainScreen implements Screen {
 				drawer.filledCircle(f.x, f.y, 1, Color.RED);
 			}
 
+            int idx = 0;
             for (int i = 0; i < creatures.size; i++) {
                 Creature creature = creatures.get(i);
-				drawer.filledRectangle(creature.x, creature.y, 1, 1, creature.color);
+				drawer.filledRectangle(creature.x - (creatureDisplaySize.get() / 2f), creature.y - (creatureDisplaySize.get() / 2f), creatureDisplaySize.get(), creatureDisplaySize.get(), creature.color);
 
+                idx++;
 			}
 
 		}
@@ -237,10 +257,15 @@ public class MainScreen implements Screen {
 
 		ImGui.begin("Settings");
 
-        ImGui.setNextItemWidth(120);
+        ImGui.text("Creature:");
+        ImGui.indent();
+
         ImGui.checkbox("Change Position", changePosition);
         if (ImGui.isItemHovered())
             ImGui.setTooltip("Every 300 frames the position of obstacles and creatures with be reset");
+        ImGui.checkbox("Kill when touching obstacle", killOnTouch);
+        ImGui.setNextItemWidth(120);
+        ImGui.inputInt("Display Size", creatureDisplaySize);
 		ImGui.setNextItemWidth(120);
 		ImGui.inputInt("Number of hidden neurons", numberOfHiddenNeurons);
 		ImGui.setNextItemWidth(120);
@@ -257,6 +282,8 @@ public class MainScreen implements Screen {
         ImGui.inputInt("Vision Range", visionRange);
         ImGui.setNextItemWidth(120);
         ImGui.inputInt("Vision Rays", visionRays);
+
+        ImGui.unindent();
 
 		ImGui.spacing();
 		ImGui.separator();

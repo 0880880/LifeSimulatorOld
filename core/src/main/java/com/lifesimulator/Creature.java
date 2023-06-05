@@ -89,6 +89,7 @@ public class Creature {
             if (Utils.intersect(start, end, temp, obstacle.radius)) {
                 inputs[2 + idx * 3 + 1] = 1.0;
                 det = true;
+                break;
             }
         }
         for (int j = 0; j < food.size; j++) {
@@ -96,6 +97,7 @@ public class Creature {
             if (f != null && Utils.intersect(start, end, f, 2)) {
                 inputs[2 + idx * 3 + 2] = 1.0;
                 det = true;
+                break;
             }
         }
         return det;
@@ -120,8 +122,9 @@ public class Creature {
                 Vector2 end = new Vector2(x, y);
                 end.x += MathUtils.cos(dir) * Statics.visionRange.get();
                 end.y += MathUtils.sin(dir) * Statics.visionRange.get();
-                if (checkIntersection(creaturesIndex, obstacles, inputs, idx, new Vector2(x, y), end, food))
-                    break;
+                if (checkIntersection(creaturesIndex, obstacles, inputs, idx, new Vector2(x, y), end, food)) {
+
+                }
                 idx++;
             }
         }
@@ -188,6 +191,8 @@ public class Creature {
             if (obstacle != null && obstacle.contains(x, y)) {
                 x = (int) oldPosition.x;
                 y = (int) oldPosition.y;
+                if (Statics.killOnTouch.get())
+                    energy = 0;
                 hit = true;
                 break;
             }
