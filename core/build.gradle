@@ -45,5 +45,4 @@ dependencies {
 
   implementation "io.github.spair:imgui-java-natives-windows:$imguiVersion"
   implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
-  implementation "com.github.aret3dev:gdx-quadtree:1.0.0"
 }

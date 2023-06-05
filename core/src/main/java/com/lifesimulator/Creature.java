@@ -7,7 +7,7 @@ import space.earlygrey.shapedrawer.ShapeDrawer;
 
 import java.util.HashMap;
 
-public class Creature {
+public class Creature implements Chunkable {
 
     public int x;
     public int y;
@@ -233,4 +233,14 @@ public class Creature {
 
     }
 
+    @Override
+    public Vector2 getPosition() {
+        temp.set(x,y);
+        return temp;
+    }
+
+    @Override
+    public float getRadius() {
+        return .5f;
+    }
 }

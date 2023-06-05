@@ -21,7 +21,7 @@ public class Lwjgl3Launcher {
 
 	private static Lwjgl3ApplicationConfiguration getDefaultConfiguration() {
 		Lwjgl3ApplicationConfiguration configuration = new Lwjgl3ApplicationConfiguration();
-		configuration.setTitle("Neurons");
+		configuration.setTitle("Life Simulator");
 		configuration.useVsync(true);
 		configuration.setWindowListener(new Lwjgl3WindowListener() {
 			@Override

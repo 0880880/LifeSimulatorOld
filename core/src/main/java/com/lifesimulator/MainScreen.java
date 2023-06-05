@@ -16,7 +16,6 @@ import imgui.extension.implot.ImPlot;
 import imgui.gl3.ImGuiImplGl3;
 import imgui.glfw.ImGuiImplGlfw;
 import imgui.type.ImBoolean;
-import it.aretesoftware.quadtree.QuadTreeItem;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
@@ -62,9 +61,6 @@ public class MainScreen implements Screen {
 		obstacles.clear();
 		creatures.clear();
 		creaturesIndex.clear();
-
-        quadTreeRoot.clear();
-
 		population = new float[] {maxCreatures.get()};
 
 		for (int i = 0; i < 20; i++) {
@@ -74,10 +70,8 @@ public class MainScreen implements Screen {
 		for (int i = 0; i < maxCreatures.get(); i++) {
             Creature c = new Creature(MathUtils.random(0, mapSize), MathUtils.random(0, mapSize));
             Utils.addCreature(creatures, c);
-            QuadTreeItem<Creature> item = quadTreeRoot.obtainItem();
-            item.init(c, new Rectangle(c.x, c.y, 1, 1));
-            quadTreeRoot.insert(item);
 			creaturesIndex.put(new Index(creatures.peek().x, creatures.peek().y), creatures.peek());
+            chunks.add(c);
 		}
 
 		neuronPositions = new Vector2[creatures.get(0).totalNeurons];
@@ -113,21 +107,17 @@ public class MainScreen implements Screen {
             if (creature.energy > creatureBaseEnergy.get() + 20 && MathUtils.randomBoolean(.01f + ((creature.energy - 7f) / 24f)) && creatures.size < maxCreatures.get()) {
                 Creature c = new Creature(creature, MathUtils.random(0,mapSize), MathUtils.random(0, mapSize));
                 Utils.addCreature(creatures, c);
+                chunks.add(c);
                 creature.energy -= creatureBaseEnergy.get() + 4;
             }
             creature.update(creaturesIndex, creatures, obstacles, food, drawer, false);
             if (creature.energy <= 0) {
                 creatures.removeIndex(i);
                 creaturesIndex.remove(new Index(creature.x, creature.y));
+                chunks.remove(creature);
             }
         }
-        quadTreeRoot.clear();
-        for (int i = 0; i < creatures.size; i++) {
-            Creature c = creatures.get(i);
-            QuadTreeItem<Creature> item = quadTreeRoot.obtainItem();
-            item.init(c, new Rectangle(c.x, c.y, 1, 1));
-            quadTreeRoot.insert(item);
-        }
+        chunks.update();
 	}
 
 	void simulate() {
@@ -277,7 +267,7 @@ public class MainScreen implements Screen {
         ImGui.setNextItemWidth(120);
         ImGui.inputFloat("Move Metabolism", moveMetabolism);
         ImGui.setNextItemWidth(120);
-        ImGui.inputFloat("Creature Base Energy", creatureBaseEnergy);
+        ImGui.inputFloat("Base Energy", creatureBaseEnergy);
         ImGui.setNextItemWidth(120);
         ImGui.inputInt("Vision Range", visionRange);
         ImGui.setNextItemWidth(120);
