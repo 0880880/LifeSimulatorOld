@@ -37,8 +37,8 @@ public class Utils {
         }
         while (isInsideObstacle) {
             isInsideObstacle = false;
-            creature.x = MathUtils.random(80,120);
-            creature.y = MathUtils.random(80,120);
+            creature.x = MathUtils.random(0,mapSize);
+            creature.y = MathUtils.random(0,mapSize);
             for (int i = 0; i < obstacles.size; i++) {
                 Circle obstacle = obstacles.get(i);
                 isInsideObstacle |= obstacle.contains(creature.x, creature.y);
