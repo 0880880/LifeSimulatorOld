@@ -54,6 +54,7 @@ public class MainScreen implements Screen {
 	public void reset() {
 
 		timer = 0;
+        otimer = 0;
 
         food.clear();
 		obstacles.clear();
@@ -343,9 +344,9 @@ public class MainScreen implements Screen {
 
 		ImGui.spacing();
 
-		ImGui.text("FPS:            " + ((int) (1 / delta)));
-		ImGui.text("Frame:          " + otimer);
-		ImGui.text("Population:     " + creatures.size);
+		ImGui.text("FPS:            " + Utils.addCommasToNumericString(String.valueOf((int) (1 / delta))));
+		ImGui.text("Frame:          " + Utils.addCommasToNumericString(String.valueOf(otimer)));
+		ImGui.text("Population:     " + Utils.addCommasToNumericString(String.valueOf(creatures.size)));
 
 		hoveringAnyWindow |= ImGui.isWindowHovered() | ImGui.isAnyItemHovered();
 
