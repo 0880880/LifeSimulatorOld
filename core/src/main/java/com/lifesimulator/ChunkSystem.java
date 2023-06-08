@@ -57,8 +57,19 @@ public class ChunkSystem {
         }
     }
 
-    public void getChunksInRange(Vector2 position, int range) {
-
+    public Array<Array<Chunkable>> getChunksInRange(Vector2 position, int r) {
+        int x = (int) (position.x / chunkSizeX);
+        int y = (int) (position.y / chunkSizeY);
+        int range = r / chunkSizeX;
+        Array<Array<Chunkable>> chunks = new Array<>();
+        for (int i = x - range / 2; i < x + range / 2; i++) {
+            for (int j = y - range / 2; j < y + range / 2; j++) {
+                if (i >= 0 && j >= 0 && i < this.chunks.length && j < this.chunks[0].length) {
+                    chunks.add(this.chunks[i][j]);
+                }
+            }
+        }
+        return chunks;
     }
 
 }

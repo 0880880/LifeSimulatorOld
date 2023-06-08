@@ -117,7 +117,7 @@ public class MainScreen implements Screen {
                 chunks.remove(creature);
             }
         }
-        chunks.update();
+        if (canSeeOthers.get()) chunks.update();
 	}
 
 	void simulate() {
@@ -184,6 +184,33 @@ public class MainScreen implements Screen {
 
     public static float[] eye = new float[20];
 
+    float delay;
+
+    boolean edit = false;
+
+    int threadMemoryLifetime = 0;
+
+    void thread() {
+        stopSimulation = false;
+        new Thread(() -> {
+            while (!stopSimulation && creatures.size > 0) {
+                threaded = true;
+                double start = System.currentTimeMillis();
+                simulate();
+                delay = (float) (System.currentTimeMillis() - start);
+                threadMemoryLifetime++;
+                if (threadMemoryLifetime >= 250) {
+                    stopSimulation = true;
+                }
+            }
+            if (stopSimulation && threadMemoryLifetime >= 250) {
+                thread();
+                threadMemoryLifetime = 0;
+            }
+            threaded = false;
+        }).start();
+    }
+
 	@Override
 	public void render(float delta) {
 
@@ -210,6 +237,8 @@ public class MainScreen implements Screen {
 		inputProcessor.scrollY = 0;
 
 		oldMouse.set(mouse);
+
+        mouse.set(viewport.unproject(mouse));
 
 		batch.setProjectionMatrix(viewport.getCamera().combined);
 		batch.begin();
@@ -238,6 +267,64 @@ public class MainScreen implements Screen {
 
 		}
 
+        if (edit) {
+            drawer.rectangle(spawnArea, Color.DARK_GRAY, 2);
+            drawer.setColor(.5f,.5f,.5f,.5f);
+            drawer.filledRectangle(spawnArea);
+            drawer.setColor(Color.WHITE);
+
+            drawer.filledCircle(spawnArea.x, spawnArea.y, 7, Color.DARK_GRAY);
+            drawer.filledCircle(spawnArea.x, spawnArea.y, 5, Color.LIGHT_GRAY);
+
+            drawer.filledCircle(spawnArea.x + spawnArea.width, spawnArea.y, 7, Color.DARK_GRAY);
+            drawer.filledCircle(spawnArea.x + spawnArea.width, spawnArea.y, 5, Color.LIGHT_GRAY);
+
+            drawer.filledCircle(spawnArea.x + spawnArea.width, spawnArea.y + spawnArea.height, 7, Color.DARK_GRAY);
+            drawer.filledCircle(spawnArea.x + spawnArea.width, spawnArea.y + spawnArea.height, 5, Color.LIGHT_GRAY);
+
+            drawer.filledCircle(spawnArea.x, spawnArea.y + spawnArea.height, 7, Color.DARK_GRAY);
+            drawer.filledCircle(spawnArea.x, spawnArea.y + spawnArea.height, 5, Color.LIGHT_GRAY);
+
+            boolean move;
+
+            move = mouse.dst2(spawnArea.x, spawnArea.y) < 80 * 80;
+
+            if (move && Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
+                spawnArea.x = mouse.x;
+                spawnArea.x = Math.max(Math.min(spawnArea.x, mapSize), 0);
+                spawnArea.width = mapSize - spawnArea.x;
+                spawnArea.y = mouse.y;
+                spawnArea.y = Math.max(Math.min(spawnArea.y, mapSize), 0);
+                spawnArea.height = mapSize - spawnArea.y;
+            }
+
+            move = mouse.dst2(spawnArea.x + spawnArea.width, spawnArea.y) < 80 * 80;
+
+            if (move && Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
+                spawnArea.width = mouse.x - spawnArea.x;
+                spawnArea.width = Math.max(Math.min(spawnArea.width, mapSize), 0);
+                spawnArea.y = mouse.y;
+                spawnArea.y = Math.max(Math.min(spawnArea.y, mapSize), 0);
+                spawnArea.height = spawnArea.height - spawnArea.y;
+            }
+
+            move = mouse.dst2(spawnArea.x, spawnArea.y + spawnArea.height) < 80 * 80;
+
+            if (move && Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
+                spawnArea.height = mouse.y - spawnArea.y;
+                spawnArea.height = Math.max(Math.min(spawnArea.height, mapSize), 0);
+                spawnArea.x = mouse.x;
+                spawnArea.x = Math.max(Math.min(spawnArea.x, mapSize), 0);
+                spawnArea.width = mapSize - spawnArea.x;
+            }
+
+
+            /*spawnArea.x = MathUtils.clamp(spawnArea.x, 0, spawnArea.width - 1);
+            spawnArea.y = MathUtils.clamp(spawnArea.y, 0, spawnArea.height - 1);
+            spawnArea.width = MathUtils.clamp(spawnArea.width, spawnArea.x + 1, mapSize);
+            spawnArea.height = MathUtils.clamp(spawnArea.height, spawnArea.y + 1, mapSize);*/
+        }
+
 		batch.end();
 
 		hoveringAnyWindow = false;
@@ -254,6 +341,7 @@ public class MainScreen implements Screen {
         if (ImGui.isItemHovered())
             ImGui.setTooltip("Every 300 frames the position of obstacles and creatures with be reset");
         ImGui.checkbox("Kill when touching obstacle", killOnTouch);
+        ImGui.checkbox("Can See Other Creatures", canSeeOthers);
         ImGui.setNextItemWidth(120);
         ImGui.inputInt("Display Size", creatureDisplaySize);
 		ImGui.setNextItemWidth(120);
@@ -276,8 +364,8 @@ public class MainScreen implements Screen {
         ImGui.unindent();
 
 		ImGui.spacing();
-		ImGui.separator();
-		ImGui.spacing();
+        ImGui.text("Environment:");
+        ImGui.indent();
 
 		ImGui.setNextItemWidth(120);
 		ImGui.inputInt("Food Spawn Interval", foodSpawnInterval);
@@ -285,35 +373,31 @@ public class MainScreen implements Screen {
 		ImGui.inputInt("Obstacle Spawn Interval", obstacleSpawnInterval);
 		ImGui.setNextItemWidth(120);
 		ImGui.inputInt("Food Spawn Amount", foodSpawnAmount);
+        ImGui.setNextItemWidth(120);
+        ImGui.inputFloat("Food Consumption Energy Gain", foodConsumptionGain);
+        ImGui.setNextItemWidth(120);
+        ImGui.inputInt("Max creatures", maxCreatures);
+
+        if (ImGui.button(edit ? "Cancel" : "Edit Spawn Area", 150, 20)) {
+            edit = !edit;
+            if (edit) stopSimulation = true;
+        }
+
+        ImGui.unindent();
 
 		ImGui.spacing();
+		ImGui.spacing();
+
 		ImGui.separator();
-		ImGui.spacing();
-
-		ImGui.setNextItemWidth(120);
-		ImGui.inputFloat("Food Consumption Energy Gain", foodConsumptionGain);
-		ImGui.setNextItemWidth(120);
-		ImGui.inputInt("Max creatures", maxCreatures);
 
 		ImGui.spacing();
 		ImGui.spacing();
 
-		ImGui.separator();
-
-		ImGui.spacing();
-		ImGui.spacing();
-
-		ImGui.beginDisabled(threaded);
+		ImGui.beginDisabled(threaded || edit);
 
         if (ImGui.button("Simulate")) {
             stopSimulation = false;
-            new Thread(() -> {
-                while (!stopSimulation && creatures.size > 0) {
-                    threaded = true;
-                    simulate();
-                }
-                threaded = false;
-            }).start();
+            thread();
         }
 
 		ImGui.spacing();
@@ -361,9 +445,10 @@ public class MainScreen implements Screen {
 
 		ImGui.spacing();
 
-		ImGui.text("FPS:            " + Utils.addCommasToNumericString(String.valueOf((int) (1 / delta))));
-		ImGui.text("Frame:          " + Utils.addCommasToNumericString(String.valueOf(otimer)));
-		ImGui.text("Population:     " + Utils.addCommasToNumericString(String.valueOf(creatures.size)));
+        ImGui.text("Simulation Delay:  " + ((int) delay) + "ms");
+        ImGui.text("FPS:               " + Utils.addCommasToNumericString(String.valueOf((int) (1 / delta))));
+		ImGui.text("Frame:             " + Utils.addCommasToNumericString(String.valueOf(otimer)));
+		ImGui.text("Population:        " + Utils.addCommasToNumericString(String.valueOf(creatures.size)));
 
 		hoveringAnyWindow |= ImGui.isWindowHovered() | ImGui.isAnyItemHovered();
 

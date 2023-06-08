@@ -3,6 +3,7 @@ package com.lifesimulator;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Circle;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
@@ -27,7 +28,7 @@ public class Statics {
     public static Array<Vector2> food = new Array<>();
 
     public static ImBoolean changePosition = new ImBoolean(true);
-    public static ImInt numberOfHiddenNeurons = new ImInt(40);
+    public static ImInt numberOfHiddenNeurons = new ImInt(20);
     public static ImInt creatureDisplaySize = new ImInt(1);
     public static ImFloat mutationRate = new ImFloat(.009f);
     public static ImFloat learningRate = new ImFloat(.001f);
@@ -42,5 +43,8 @@ public class Statics {
     public static ImInt visionRange = new ImInt(30);
     public static ImInt visionRays = new ImInt(20);
     public static ImBoolean killOnTouch = new ImBoolean(false);
+    public static ImBoolean canSeeOthers = new ImBoolean(true);
+
+    public static Rectangle spawnArea = new Rectangle(0, 0, mapSize, mapSize);
 
 }

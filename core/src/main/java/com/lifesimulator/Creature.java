@@ -83,6 +83,20 @@ public class Creature implements Chunkable {
 
     boolean checkIntersection(HashMap<Index, Creature> creaturesIndex, Array<Circle> obstacles, double[] inputs, int idx, Vector2 start, Vector2 end, Array<Vector2> food) {
         boolean det = false;
+        if (Statics.canSeeOthers.get()) {
+            Array<Array<Chunkable>> chunks = Statics.chunks.getChunksInRange(getPosition(), Statics.visionRange.get());
+            for (int i = 0; i < chunks.size; i++) {
+                Array<Chunkable> chunk = chunks.get(i);
+                for (int j = 0; j < chunk.size; j++) {
+                    Chunkable chunkable = chunk.get(j);
+                    if (Utils.intersect(start, end, chunkable.getPosition(), chunkable.getRadius() * 1.5f)) {
+                        inputs[2 + idx * 3] = 1.0;
+                        det = true;
+                        break;
+                    }
+                }
+            }
+        }
         for (int j = 0; j < obstacles.size; j++) {
             Circle obstacle = obstacles.get(j);
             temp.set(obstacle.x, obstacle.y);
