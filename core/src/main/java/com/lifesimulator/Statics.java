@@ -44,6 +44,10 @@ public class Statics {
     public static ImInt visionRays = new ImInt(20);
     public static ImBoolean killOnTouch = new ImBoolean(false);
     public static ImBoolean canSeeOthers = new ImBoolean(true);
+    public static ImBoolean positionInput = new ImBoolean(true);
+    public static ImBoolean oscillatorInput = new ImBoolean(true);
+    public static ImBoolean speedMutation = new ImBoolean(true);
+    public static ImBoolean neuronASMutation = new ImBoolean(true);
 
     public static Rectangle spawnArea = new Rectangle(0, 0, mapSize, mapSize);
 

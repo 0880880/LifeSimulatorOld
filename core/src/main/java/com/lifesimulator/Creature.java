@@ -1,5 +1,6 @@
 package com.lifesimulator;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.*;
 import com.badlogic.gdx.utils.Array;
@@ -36,26 +37,48 @@ public class Creature implements Chunkable {
     public int totalNeurons;
 
     public Creature(int x, int y) {
-        color = new Color(MathUtils.random(0f,1f),MathUtils.random(0f,1f),MathUtils.random(0f,1f),1f);
         init(x, y);
         genome = new Genome(Statics.numberOfHiddenNeurons.get());
-        brain = new Brain(2 + Statics.visionRays.get() * (eye ? 3 : 0) + 4 + 1 + 4, 20, 2 + 2);
+        color = Utils.hsvToRgb(
+            genome.colorHue,
+            genome.colorSaturation,
+            genome.colorValue
+        );
+        brain = new Brain(2 + Statics.visionRays.get() * (eye ? 3 : 0) + 4 + 1 + 4, genome.neurons, 2 + 2);
         totalNeurons = brain.neurons.size;
     }
     public Creature(Creature creatureA, int x, int y) {
-        color = creatureA.color;
         init(x, y);
         genome = creatureA.genome;
-        if (MathUtils.randomBoolean(.001f)) {
-            //gene.neurons++;
-        } else {
+        if (MathUtils.randomBoolean(.0009f))
+            genome.colorHue += MathUtils.random(-.1f, .1f);
+        if (MathUtils.randomBoolean(.0009f))
+            genome.colorSaturation += MathUtils.random(-.1f, .1f);
+        if (MathUtils.randomBoolean(.0009f))
+            genome.colorValue += MathUtils.random(-.1f, .1f);
+        color = Utils.hsvToRgb(
+            genome.colorHue,
+            genome.colorSaturation,
+            genome.colorValue
+        );
+        if (Statics.speedMutation.get()) {
+            if (MathUtils.randomBoolean(.0009f)) {
+                genome.speed++;
+            } else {
+                if (MathUtils.randomBoolean(.0009f))
+                    genome.speed--;
+            }
+        }
+        genome.speed = Math.max(genome.speed, 1);
+        if (Statics.neuronASMutation.get()) {
             if (MathUtils.randomBoolean(.001f)) {
-                //gene.neurons--;
+                genome.neurons++;
+            } else {
+                if (MathUtils.randomBoolean(.001f))
+                    genome.neurons--;
             }
         }
         brain = new Brain(creatureA.brain, genome.neurons);
-        if (brain.evolved)
-            color.add(MathUtils.random(-.001f,.001f),MathUtils.random(-.001f,.001f),MathUtils.random(-.001f,.001f),0);
         totalNeurons = brain.neurons.size;
     }
     public Creature(Creature creatureA, Creature creatureB, int x, int y) {
@@ -63,10 +86,10 @@ public class Creature implements Chunkable {
         init(x, y);
         genome = creatureA.genome;
         if (MathUtils.randomBoolean(.001f)) {
-            //gene.neurons++;
+            genome.neurons++;
         } else {
             if (MathUtils.randomBoolean(.001f)) {
-                //gene.neurons--;
+                genome.neurons--;
             }
         }
         brain = new Brain(creatureA.brain, creatureB.brain, genome.neurons);
@@ -82,6 +105,11 @@ public class Creature implements Chunkable {
     Vector2 temp = new Vector2();
 
     boolean checkIntersection(HashMap<Index, Creature> creaturesIndex, Array<Circle> obstacles, double[] inputs, int idx, Vector2 start, Vector2 end, Array<Vector2> food) {
+
+        inputs[2 + idx * 3] = -1;
+        inputs[2 + idx * 3 + 1] = -1;
+        inputs[2 + idx * 3 + 2] = -1;
+
         boolean det = false;
         if (Statics.canSeeOthers.get()) {
             Array<Array<Chunkable>> chunks = Statics.chunks.getChunksInRange(getPosition(), Statics.visionRange.get());
@@ -97,11 +125,13 @@ public class Creature implements Chunkable {
                 }
             }
         }
+        float obstacleDistance = Float.MAX_VALUE;
+        float foodDistance = Float.MAX_VALUE;
         for (int j = 0; j < obstacles.size; j++) {
             Circle obstacle = obstacles.get(j);
             temp.set(obstacle.x, obstacle.y);
             if (Utils.intersect(start, end, temp, obstacle.radius)) {
-                inputs[2 + idx * 3 + 1] = 1.0;
+                obstacleDistance = start.dst(obstacle.x, obstacle.y) - obstacle.radius;
                 det = true;
                 break;
             }
@@ -109,11 +139,17 @@ public class Creature implements Chunkable {
         for (int j = 0; j < food.size; j++) {
             Vector2 f = food.get(j);
             if (f != null && Utils.intersect(start, end, f, 2)) {
-                inputs[2 + idx * 3 + 2] = 1.0;
+                foodDistance = start.dst(f) - 1;
                 det = true;
                 break;
             }
         }
+
+        if (obstacleDistance < foodDistance)
+            inputs[2 + idx * 3 + 1] = obstacleDistance / (float) Statics.visionRange.get();
+        if (obstacleDistance > foodDistance)
+            inputs[2 + idx * 3 + 2] = foodDistance / (float) Statics.visionRange.get();
+
         return det;
     }
 
@@ -122,12 +158,18 @@ public class Creature implements Chunkable {
     public double sender0 = 0;
     public double sender1 = 0;
 
+    public double time = 0;
+
     public void update(HashMap<Index, Creature> creaturesIndex, Array<Creature> creatures, Array<Circle> obstacles, Array<Vector2> food, ShapeDrawer drawer, boolean enableRendering) {
         frameCounter++;
 
+        time += 1;
+
         double[] inputs = new double[2 + (Statics.visionRays.get() * (eye ? 3 : 0)) + 4 + 1 + 2];
-        inputs[0] = x / 256.0;
-        inputs[1] = y / 256.0;
+        if (Statics.positionInput.get()) {
+            inputs[0] = x / ((float) Statics.mapSize) * 2 - 1;
+            inputs[1] = y / ((float) Statics.mapSize) * 2 - 1;
+        }
         int idx = 0;
         // EYE
         if (eye) {
@@ -157,7 +199,7 @@ public class Creature implements Chunkable {
 
         // CLOCK
 
-        inputs[2 + (Statics.visionRays.get() * (eye ? 3 : 0)) + 3 + 1] = clock ? -1 : 1;
+        inputs[2 + (Statics.visionRays.get() * (eye ? 3 : 0)) + 3 + 1] = Statics.oscillatorInput.get() ? clock ? -1 : 1 : 0;
 
         // COMMUNICATION
 
@@ -178,24 +220,24 @@ public class Creature implements Chunkable {
         double[] outputs = brain.get(inputs);
 
         Vector2 oldPosition = new Vector2(x, y);
-        if (outputs[0] > .3f)
-            x++;
-        if (outputs[0] < -.3f)
-            x--;
+        if (outputs[0] > .5f)
+            x += genome.speed;
+        if (outputs[0] < -.5f)
+            x -= genome.speed;
         if (outputs[1] > .5f)
-            y++;
+            y += genome.speed;
         if (outputs[1] < -.5f)
-            y--;
+            y -= genome.speed;
 
         sender0 = outputs[2];
 
         if (oldPosition.x != x && oldPosition.y != y) {
             moveMeter++;
-            energy -= .5f;
+            energy -= Statics.moveMetabolism.get() * genome.speed;
         }
 
         if (frameCounter > 5) {
-            energy--;
+            energy -= Statics.idleMetabolism.get();
             frameCounter = 0;
         }
 

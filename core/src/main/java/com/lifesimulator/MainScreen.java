@@ -7,12 +7,12 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.Circle;
 import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 import imgui.ImGui;
 import imgui.extension.implot.ImPlot;
+import imgui.flag.ImGuiTreeNodeFlags;
 import imgui.gl3.ImGuiImplGl3;
 import imgui.glfw.ImGuiImplGlfw;
 import imgui.type.ImBoolean;
@@ -52,6 +52,8 @@ public class MainScreen implements Screen {
 
 	boolean hoveringAnyWindow = false;
 
+    ImBoolean restartSimulationIfEnded = new ImBoolean(false);
+
 	public void reset() {
 
 		timer = 0;
@@ -68,7 +70,7 @@ public class MainScreen implements Screen {
 		}
 
 		for (int i = 0; i < maxCreatures.get(); i++) {
-            Creature c = new Creature(MathUtils.random(0, mapSize), MathUtils.random(0, mapSize));
+            Creature c = new Creature((int) MathUtils.random(spawnArea.x, spawnArea.width), (int) MathUtils.random(spawnArea.y, spawnArea.height));
             Utils.addCreature(creatures, c);
 			creaturesIndex.put(new Index(creatures.peek().x, creatures.peek().y), creatures.peek());
             chunks.add(c);
@@ -105,7 +107,7 @@ public class MainScreen implements Screen {
         for (int i = 0; i < creatures.size; i++) {
             Creature creature = creatures.get(i);
             if (creature.energy > creatureBaseEnergy.get() + 20 && MathUtils.randomBoolean(.01f + ((creature.energy - 7f) / 24f)) && creatures.size < maxCreatures.get()) {
-                Creature c = new Creature(creature, MathUtils.random(0,mapSize), MathUtils.random(0, mapSize));
+                Creature c = new Creature(creature, creature.x + 1, creature.y);
                 Utils.addCreature(creatures, c);
                 chunks.add(c);
                 creature.energy -= creatureBaseEnergy.get() + 4;
@@ -147,27 +149,6 @@ public class MainScreen implements Screen {
                 float radius = obstacle.radius;
                 obstacle.setPosition(MathUtils.random(0, mapSize), MathUtils.random(0, mapSize));
             }
-
-            for (int i = 0; i < creatures.size; i++) {
-                Creature creature = creatures.get(i);
-                creature.x = MathUtils.random(0,mapSize);
-                creature.y = MathUtils.random(0,mapSize);
-
-                boolean isInsideObstacle = false;
-                for (int j = 0; j < obstacles.size; j++) {
-                    Circle obstacle = obstacles.get(j);
-                    isInsideObstacle |= obstacle.contains(creature.x, creature.y);
-                }
-                while (isInsideObstacle) {
-                    isInsideObstacle = false;
-                    creature.x = MathUtils.random(80,120);
-                    creature.y = MathUtils.random(80,120);
-                    for (int j = 0; j < obstacles.size; j++) {
-                        Circle obstacle = obstacles.get(j);
-                        isInsideObstacle |= obstacle.contains(creature.x, creature.y);
-                    }
-                }
-            }
         }
 
         ArrayList<Float> newPopulation = new ArrayList<>();
@@ -190,26 +171,39 @@ public class MainScreen implements Screen {
 
     int threadMemoryLifetime = 0;
 
-    void thread() {
-        stopSimulation = false;
-        new Thread(() -> {
-            while (!stopSimulation && creatures.size > 0) {
+    void tc() {
+        boolean s = true;
+        while (!stopSimulation && (s || threadMemoryLifetime >= 250)) {
+
+            s = false;
+            threadMemoryLifetime = 0;
+            while (creatures.size > 0 && threadMemoryLifetime < 250) {
                 threaded = true;
                 double start = System.currentTimeMillis();
                 simulate();
                 delay = (float) (System.currentTimeMillis() - start);
                 threadMemoryLifetime++;
-                if (threadMemoryLifetime >= 250) {
-                    stopSimulation = true;
-                }
             }
-            if (stopSimulation && threadMemoryLifetime >= 250) {
-                thread();
-                threadMemoryLifetime = 0;
-            }
-            threaded = false;
+        }
+
+        if (restartSimulationIfEnded.get()) {
+            stopSimulation = false;
+            reset();
+            tc();
+        } else {
+            stopSimulation = true;
+        }
+        threaded = false;
+    }
+
+    void thread() {
+        stopSimulation = false;
+        new Thread(() -> {
+            tc();
         }).start();
     }
+
+    int editing = 0;
 
 	@Override
 	public void render(float delta) {
@@ -268,56 +262,64 @@ public class MainScreen implements Screen {
 		}
 
         if (edit) {
-            drawer.rectangle(spawnArea, Color.DARK_GRAY, 2);
+            drawer.rectangle(spawnArea.x, spawnArea.y, spawnArea.width - spawnArea.x, spawnArea.height - spawnArea.y, Color.DARK_GRAY, 2);
             drawer.setColor(.5f,.5f,.5f,.5f);
-            drawer.filledRectangle(spawnArea);
+            drawer.filledRectangle(spawnArea.x, spawnArea.y, spawnArea.width - spawnArea.x, spawnArea.height - spawnArea.y);
             drawer.setColor(Color.WHITE);
 
             drawer.filledCircle(spawnArea.x, spawnArea.y, 7, Color.DARK_GRAY);
             drawer.filledCircle(spawnArea.x, spawnArea.y, 5, Color.LIGHT_GRAY);
 
-            drawer.filledCircle(spawnArea.x + spawnArea.width, spawnArea.y, 7, Color.DARK_GRAY);
-            drawer.filledCircle(spawnArea.x + spawnArea.width, spawnArea.y, 5, Color.LIGHT_GRAY);
+            drawer.filledCircle(spawnArea.width, spawnArea.y, 7, Color.DARK_GRAY);
+            drawer.filledCircle(spawnArea.width, spawnArea.y, 5, Color.LIGHT_GRAY);
 
-            drawer.filledCircle(spawnArea.x + spawnArea.width, spawnArea.y + spawnArea.height, 7, Color.DARK_GRAY);
-            drawer.filledCircle(spawnArea.x + spawnArea.width, spawnArea.y + spawnArea.height, 5, Color.LIGHT_GRAY);
+            drawer.filledCircle(spawnArea.width, spawnArea.height, 7, Color.DARK_GRAY);
+            drawer.filledCircle(spawnArea.width, spawnArea.height, 5, Color.LIGHT_GRAY);
 
-            drawer.filledCircle(spawnArea.x, spawnArea.y + spawnArea.height, 7, Color.DARK_GRAY);
-            drawer.filledCircle(spawnArea.x, spawnArea.y + spawnArea.height, 5, Color.LIGHT_GRAY);
+            drawer.filledCircle(spawnArea.x, spawnArea.height, 7, Color.DARK_GRAY);
+            drawer.filledCircle(spawnArea.x, spawnArea.height, 5, Color.LIGHT_GRAY);
 
             boolean move;
 
-            move = mouse.dst2(spawnArea.x, spawnArea.y) < 80 * 80;
+            move = mouse.dst2(spawnArea.x, spawnArea.y) < 40 * 40;
 
-            if (move && Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
+            if (move && Gdx.input.isButtonPressed(Input.Buttons.LEFT) && editing == 0) editing = 1;
+
+            move = mouse.dst2(spawnArea.width, spawnArea.y) < 40 * 40;
+
+            if (move && Gdx.input.isButtonPressed(Input.Buttons.LEFT) && editing == 0) editing = 2;
+
+            move = mouse.dst2(spawnArea.x, spawnArea.height) < 40 * 40;
+
+            if (move && Gdx.input.isButtonPressed(Input.Buttons.LEFT) && editing == 0) editing = 3;
+
+            move = mouse.dst2(spawnArea.width, spawnArea.height) < 40 * 40;
+
+            if (move && Gdx.input.isButtonPressed(Input.Buttons.LEFT) && editing == 0) editing = 4;
+
+            if (editing == 1) {
                 spawnArea.x = mouse.x;
                 spawnArea.x = Math.max(Math.min(spawnArea.x, mapSize), 0);
-                spawnArea.width = mapSize - spawnArea.x;
                 spawnArea.y = mouse.y;
                 spawnArea.y = Math.max(Math.min(spawnArea.y, mapSize), 0);
-                spawnArea.height = mapSize - spawnArea.y;
-            }
-
-            move = mouse.dst2(spawnArea.x + spawnArea.width, spawnArea.y) < 80 * 80;
-
-            if (move && Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
-                spawnArea.width = mouse.x - spawnArea.x;
+            } else if (editing == 2) {
+                spawnArea.width = mouse.x;
                 spawnArea.width = Math.max(Math.min(spawnArea.width, mapSize), 0);
                 spawnArea.y = mouse.y;
                 spawnArea.y = Math.max(Math.min(spawnArea.y, mapSize), 0);
-                spawnArea.height = spawnArea.height - spawnArea.y;
-            }
-
-            move = mouse.dst2(spawnArea.x, spawnArea.y + spawnArea.height) < 80 * 80;
-
-            if (move && Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
-                spawnArea.height = mouse.y - spawnArea.y;
-                spawnArea.height = Math.max(Math.min(spawnArea.height, mapSize), 0);
+            } else if (editing == 3) {
                 spawnArea.x = mouse.x;
                 spawnArea.x = Math.max(Math.min(spawnArea.x, mapSize), 0);
-                spawnArea.width = mapSize - spawnArea.x;
+                spawnArea.height = mouse.y;
+                spawnArea.height = Math.max(Math.min(spawnArea.height, mapSize), 0);
+            } else if (editing == 4) {
+                spawnArea.width = mouse.x;
+                spawnArea.width = Math.max(Math.min(spawnArea.width, mapSize), 0);
+                spawnArea.height = mouse.y;
+                spawnArea.height = Math.max(Math.min(spawnArea.height, mapSize), 0);
             }
 
+            if (!Gdx.input.isButtonPressed(Input.Buttons.LEFT)) editing = 0;
 
             /*spawnArea.x = MathUtils.clamp(spawnArea.x, 0, spawnArea.width - 1);
             spawnArea.y = MathUtils.clamp(spawnArea.y, 0, spawnArea.height - 1);
@@ -334,54 +336,89 @@ public class MainScreen implements Screen {
 
 		ImGui.begin("Settings");
 
-        ImGui.text("Creature:");
-        ImGui.indent();
+        if (ImGui.treeNodeEx("Creature", ImGuiTreeNodeFlags.DefaultOpen)) {
 
-        ImGui.checkbox("Change Position", changePosition);
-        if (ImGui.isItemHovered())
-            ImGui.setTooltip("Every 300 frames the position of obstacles and creatures with be reset");
-        ImGui.checkbox("Kill when touching obstacle", killOnTouch);
-        ImGui.checkbox("Can See Other Creatures", canSeeOthers);
-        ImGui.setNextItemWidth(120);
-        ImGui.inputInt("Display Size", creatureDisplaySize);
-		ImGui.setNextItemWidth(120);
-		ImGui.inputInt("Number of hidden neurons", numberOfHiddenNeurons);
-		ImGui.setNextItemWidth(120);
-		ImGui.inputFloat("Mutation Rate", mutationRate);
-		ImGui.setNextItemWidth(120);
-		ImGui.inputFloat("Learning Rate", learningRate);
-		ImGui.setNextItemWidth(120);
-		ImGui.inputFloat("Idle Metabolism", idleMetabolism);
-        ImGui.setNextItemWidth(120);
-        ImGui.inputFloat("Move Metabolism", moveMetabolism);
-        ImGui.setNextItemWidth(120);
-        ImGui.inputFloat("Base Energy", creatureBaseEnergy);
-        ImGui.setNextItemWidth(120);
-        ImGui.inputInt("Vision Range", visionRange);
-        ImGui.setNextItemWidth(120);
-        ImGui.inputInt("Vision Rays", visionRays);
+            ImGui.checkbox("Change Position", changePosition);
+            if (ImGui.isItemHovered())
+                ImGui.setTooltip("Every 300 frames the position of obstacles and creatures with be reset");
+            ImGui.checkbox("Kill when touching obstacle", killOnTouch);
+            ImGui.checkbox("Can See Other Creatures", canSeeOthers);
+            ImGui.checkbox("Position Input", positionInput);
+            ImGui.checkbox("Oscillator Input", oscillatorInput);
+            ImGui.checkbox("Speed Mutation", speedMutation);
+            ImGui.checkbox("Neuron Addition/Subtraction Mutation", neuronASMutation);
+            ImGui.checkbox("Depth Vision", neuronASMutation);
+            ImGui.setNextItemWidth(120);
+            ImGui.inputInt("Display Size", creatureDisplaySize);
+            ImGui.setNextItemWidth(120);
+            ImGui.inputInt("Number of hidden neurons", numberOfHiddenNeurons);
+            ImGui.setNextItemWidth(120);
+            ImGui.inputFloat("Mutation Rate", mutationRate);
+            ImGui.setNextItemWidth(120);
+            ImGui.inputFloat("Learning Rate", learningRate);
+            ImGui.setNextItemWidth(120);
+            ImGui.inputFloat("Idle Metabolism", idleMetabolism);
+            ImGui.setNextItemWidth(120);
+            ImGui.inputFloat("Move Metabolism", moveMetabolism);
+            ImGui.setNextItemWidth(120);
+            ImGui.inputFloat("Base Energy", creatureBaseEnergy);
+            ImGui.setNextItemWidth(120);
+            ImGui.inputInt("Vision Range", visionRange);
+            ImGui.setNextItemWidth(120);
+            ImGui.inputInt("Vision Rays", visionRays);
 
-        ImGui.unindent();
+            ImGui.treePop();
+
+        }
 
 		ImGui.spacing();
-        ImGui.text("Environment:");
+        if (ImGui.treeNodeEx("Environment", ImGuiTreeNodeFlags.DefaultOpen)) {
+
+            ImGui.setNextItemWidth(120);
+            ImGui.inputInt("Food Spawn Interval", foodSpawnInterval);
+            ImGui.setNextItemWidth(120);
+            ImGui.inputInt("Obstacle Spawn Interval", obstacleSpawnInterval);
+            ImGui.setNextItemWidth(120);
+            ImGui.inputInt("Food Spawn Amount", foodSpawnAmount);
+            ImGui.setNextItemWidth(120);
+            ImGui.inputFloat("Food Consumption Energy Gain", foodConsumptionGain);
+            ImGui.setNextItemWidth(120);
+            ImGui.inputInt("Max creatures", maxCreatures);
+
+            if (ImGui.treeNode("Areas")) {
+
+                if (ImGui.button(edit ? "Done" : "Edit Creature Spawn Area", 180, 30)) {
+                    edit = !edit;
+                    if (edit) stopSimulation = true;
+                }
+
+                if (ImGui.button(edit ? "Done" : "Edit Food Spawn Area", 180, 30)) {
+                    edit = !edit;
+                    if (edit) stopSimulation = true;
+                }
+
+                if (ImGui.button(edit ? "Done" : "Edit Obstacle Spawn Area", 180, 30)) {
+                    edit = !edit;
+                    if (edit) stopSimulation = true;
+                }
+
+                if (ImGui.button(edit ? "Done" : "Edit Toxic Area", 180, 30)) {
+                    edit = !edit;
+                    if (edit) stopSimulation = true;
+                }
+
+                ImGui.treePop();
+
+            }
+
+            ImGui.treePop();
+
+        }
+
+        ImGui.text("Simulation:");
         ImGui.indent();
 
-		ImGui.setNextItemWidth(120);
-		ImGui.inputInt("Food Spawn Interval", foodSpawnInterval);
-		ImGui.setNextItemWidth(120);
-		ImGui.inputInt("Obstacle Spawn Interval", obstacleSpawnInterval);
-		ImGui.setNextItemWidth(120);
-		ImGui.inputInt("Food Spawn Amount", foodSpawnAmount);
-        ImGui.setNextItemWidth(120);
-        ImGui.inputFloat("Food Consumption Energy Gain", foodConsumptionGain);
-        ImGui.setNextItemWidth(120);
-        ImGui.inputInt("Max creatures", maxCreatures);
-
-        if (ImGui.button(edit ? "Cancel" : "Edit Spawn Area", 150, 20)) {
-            edit = !edit;
-            if (edit) stopSimulation = true;
-        }
+        ImGui.checkbox("Restart Simulation If Simulation Ended", restartSimulationIfEnded);
 
         ImGui.unindent();
 
@@ -445,7 +482,7 @@ public class MainScreen implements Screen {
 
 		ImGui.spacing();
 
-        ImGui.text("Simulation Delay:  " + ((int) delay) + "ms");
+        ImGui.text("Simulation Delay:  " + ((int) delay) + "ms" + " / " + ((int) (1000 / delay)) + " FPS");
         ImGui.text("FPS:               " + Utils.addCommasToNumericString(String.valueOf((int) (1 / delta))));
 		ImGui.text("Frame:             " + Utils.addCommasToNumericString(String.valueOf(otimer)));
 		ImGui.text("Population:        " + Utils.addCommasToNumericString(String.valueOf(creatures.size)));

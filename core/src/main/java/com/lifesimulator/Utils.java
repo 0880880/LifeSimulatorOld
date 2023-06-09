@@ -19,6 +19,29 @@ import static com.lifesimulator.Statics.inputProcessor;
 
 public class Utils {
 
+    public static Color hsvToRgb(float hue, float saturation, float value) {
+
+        int h = (int)(hue * 6);
+        float f = hue * 6 - h;
+        float p = value * (1 - saturation);
+        float q = value * (1 - f * saturation);
+        float t = value * (1 - (1 - f) * saturation);
+
+        switch (h) {
+            case 0: return rgbToColor(value, t, p);
+            case 1: return rgbToColor(q, value, p);
+            case 2: return rgbToColor(p, value, t);
+            case 3: return rgbToColor(p, q, value);
+            case 4: return rgbToColor(t, p, value);
+            case 5: return rgbToColor(value, p, q);
+            default: throw new RuntimeException("Something went wrong when converting from HSV to RGB. Input was " + hue + ", " + saturation + ", " + value);
+        }
+    }
+
+    public static Color rgbToColor(float r, float g, float b) {
+        return new Color(r, g, b, 1);
+    }
+
     public static void init() {
         batch = new SpriteBatch();
         drawer = new ShapeDrawer(batch, new TextureRegion(new Texture(new APixmap(1, 1, Pixmap.Format.RGBA8888, Color.WHITE))));
@@ -30,8 +53,31 @@ public class Utils {
     }
 
     public static void addCreature(Array<Creature> array, Creature creature) {
-        boolean isInsideObstacle = false;
-        for (int i = 0; i < obstacles.size; i++) {
+        boolean isInsideOtherCreature = false;
+        Array<Array<Chunkable>> chunks = Statics.chunks.getChunksInRange(creature.getPosition(), 32);
+        if (chunks.size > 0) {
+            for (int i = 0; i < chunks.size; i++) {
+                Array<Chunkable> chunk = chunks.get(i);
+                for (int j = 0; j < chunk.size; j++) {
+                    if (chunk.get(j).getPosition().equals(creature.getPosition()))
+                        isInsideOtherCreature = true;
+                }
+            }
+        }
+        while (isInsideOtherCreature) {
+            isInsideOtherCreature = false;
+            creature.x++;
+            if (chunks.size > 0) {
+                for (int i = 0; i < chunks.size; i++) {
+                    Array<Chunkable> chunk = chunks.get(i);
+                    for (int j = 0; j < chunk.size; j++) {
+                        if (chunk.get(j).getPosition().equals(creature.getPosition()))
+                            isInsideOtherCreature = true;
+                    }
+                }
+            }
+        }
+        /*for (int i = 0; i < obstacles.size; i++) {
             Circle obstacle = obstacles.get(i);
             isInsideObstacle |= obstacle.contains(creature.x, creature.y);
         }
@@ -43,7 +89,7 @@ public class Utils {
                 Circle obstacle = obstacles.get(i);
                 isInsideObstacle |= obstacle.contains(creature.x, creature.y);
             }
-        }
+        }*/
         array.add(creature);
     }
 
