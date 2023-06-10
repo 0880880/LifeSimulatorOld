@@ -44,7 +44,7 @@ public class Creature implements Chunkable {
             genome.colorSaturation,
             genome.colorValue
         );
-        brain = new Brain(2 + Statics.visionRays.get() * (eye ? 3 : 0) + 4 + 1 + 4, genome.neurons, 2 + 2);
+        brain = new Brain(2 + Statics.visionRays.get() * (eye ? 4 : 0) + 4 + 1 + 4, genome.neurons, 2 + 2);
         totalNeurons = brain.neurons.size;
     }
     public Creature(Creature creatureA, int x, int y) {
@@ -56,6 +56,9 @@ public class Creature implements Chunkable {
             genome.colorSaturation += MathUtils.random(-.1f, .1f);
         if (MathUtils.randomBoolean(.0009f))
             genome.colorValue += MathUtils.random(-.1f, .1f);
+        genome.colorHue = MathUtils.clamp(genome.colorHue, 0, 1);
+        genome.colorSaturation = MathUtils.clamp(genome.colorSaturation, 0, 1);
+        genome.colorValue = MathUtils.clamp(genome.colorValue, 0, 1);
         color = Utils.hsvToRgb(
             genome.colorHue,
             genome.colorSaturation,
@@ -106,9 +109,16 @@ public class Creature implements Chunkable {
 
     boolean checkIntersection(HashMap<Index, Creature> creaturesIndex, Array<Circle> obstacles, double[] inputs, int idx, Vector2 start, Vector2 end, Array<Vector2> food) {
 
-        inputs[2 + idx * 3] = -1;
-        inputs[2 + idx * 3 + 1] = -1;
-        inputs[2 + idx * 3 + 2] = -1;
+        if (!Statics.simpleVision.get()) {
+            inputs[2 + idx * 4] = 1;
+            inputs[2 + idx * 4 + 1] = 1;
+            inputs[2 + idx * 4 + 2] = 1;
+        } else {
+            inputs[2 + idx * 4] = -1;
+            inputs[2 + idx * 4 + 1] = -1;
+            inputs[2 + idx * 4 + 2] = -1;
+        }
+        inputs[2 + idx * 4 + 2] = 1;
 
         boolean det = false;
         if (Statics.canSeeOthers.get()) {
@@ -118,7 +128,17 @@ public class Creature implements Chunkable {
                 for (int j = 0; j < chunk.size; j++) {
                     Chunkable chunkable = chunk.get(j);
                     if (Utils.intersect(start, end, chunkable.getPosition(), chunkable.getRadius() * 1.5f)) {
-                        inputs[2 + idx * 3] = 1.0;
+                        Creature creature = (Creature) chunkable;
+                        if (!Statics.simpleVision.get()) {
+                            inputs[2 + idx * 4] = creature.color.r;
+                            inputs[2 + idx * 4 + 1] = creature.color.g;
+                            inputs[2 + idx * 4 + 2] = creature.color.b;
+                        } else {
+                            inputs[2 + idx * 4] = 1;
+                        }
+                        if (Statics.depthVision.get()) {
+                            inputs[2 + idx * 4 + 2] = start.dst(creature.x, creature.y) / (float) Statics.visionRange.get();
+                        }
                         det = true;
                         break;
                     }
@@ -145,10 +165,30 @@ public class Creature implements Chunkable {
             }
         }
 
-        if (obstacleDistance < foodDistance)
-            inputs[2 + idx * 3 + 1] = obstacleDistance / (float) Statics.visionRange.get();
-        if (obstacleDistance > foodDistance)
-            inputs[2 + idx * 3 + 2] = foodDistance / (float) Statics.visionRange.get();
+        if (obstacleDistance < foodDistance) {
+            if (!Statics.simpleVision.get()) {
+                inputs[2 + idx * 4] = 0;
+                inputs[2 + idx * 4 + 1] = 0;
+                inputs[2 + idx * 4 + 2] = 0;
+            } else {
+                inputs[2 + idx * 4 + 1] = 0;
+            }
+            if (Statics.depthVision.get()) {
+                inputs[2 + idx * 4 + 3] = obstacleDistance / (float) Statics.visionRange.get();
+            }
+        }
+        if (obstacleDistance > foodDistance) {
+            if (!Statics.simpleVision.get()) {
+                inputs[2 + idx * 4] = 1;
+                inputs[2 + idx * 4 + 1] = 0;
+                inputs[2 + idx * 4 + 2] = 0;
+            } else {
+                inputs[2 + idx * 4 + 2] = 1;
+            }
+            if (Statics.depthVision.get()) {
+                inputs[2 + idx * 4 + 3] = foodDistance / (float) Statics.visionRange.get();
+            }
+        }
 
         return det;
     }
@@ -165,7 +205,7 @@ public class Creature implements Chunkable {
 
         time += 1;
 
-        double[] inputs = new double[2 + (Statics.visionRays.get() * (eye ? 3 : 0)) + 4 + 1 + 2];
+        double[] inputs = new double[2 + (Statics.visionRays.get() * (eye ? 4 : 0)) + 4 + 1 + 2];
         if (Statics.positionInput.get()) {
             inputs[0] = x / ((float) Statics.mapSize) * 2 - 1;
             inputs[1] = y / ((float) Statics.mapSize) * 2 - 1;
@@ -257,7 +297,7 @@ public class Creature implements Chunkable {
             Vector2 f = food.get(i);
             if (f != null && f.dst(x, y) < 2) {
                 foodEaten++;
-                energy += 142;
+                energy += Statics.foodConsumptionGain.get();
                 food.removeIndex(i);
                 break;
             }

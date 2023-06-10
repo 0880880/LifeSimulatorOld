@@ -19,27 +19,12 @@ import static com.lifesimulator.Statics.inputProcessor;
 
 public class Utils {
 
-    public static Color hsvToRgb(float hue, float saturation, float value) {
+    public static Color hsvToRgb(float hue, float saturation, float brightness) {
 
-        int h = (int)(hue * 6);
-        float f = hue * 6 - h;
-        float p = value * (1 - saturation);
-        float q = value * (1 - f * saturation);
-        float t = value * (1 - (1 - f) * saturation);
+        java.awt.Color jColor = java.awt.Color.getHSBColor(hue, saturation, brightness);
 
-        switch (h) {
-            case 0: return rgbToColor(value, t, p);
-            case 1: return rgbToColor(q, value, p);
-            case 2: return rgbToColor(p, value, t);
-            case 3: return rgbToColor(p, q, value);
-            case 4: return rgbToColor(t, p, value);
-            case 5: return rgbToColor(value, p, q);
-            default: throw new RuntimeException("Something went wrong when converting from HSV to RGB. Input was " + hue + ", " + saturation + ", " + value);
-        }
-    }
+        return new Color(jColor.getRed() / 255f, jColor.getGreen() / 255f, jColor.getBlue() / 255f, 1f);
 
-    public static Color rgbToColor(float r, float g, float b) {
-        return new Color(r, g, b, 1);
     }
 
     public static void init() {

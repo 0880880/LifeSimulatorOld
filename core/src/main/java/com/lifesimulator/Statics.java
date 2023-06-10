@@ -40,6 +40,8 @@ public class Statics {
     public static ImInt obstacleSpawnInterval = new ImInt(100);
     public static ImInt foodSpawnAmount = new ImInt(20);
     public static ImInt maxCreatures = new ImInt(2000);
+    public static ImInt maxFood = new ImInt(100);
+    public static ImInt maxObstacles = new ImInt(100);
     public static ImInt visionRange = new ImInt(30);
     public static ImInt visionRays = new ImInt(20);
     public static ImBoolean killOnTouch = new ImBoolean(false);
@@ -48,6 +50,8 @@ public class Statics {
     public static ImBoolean oscillatorInput = new ImBoolean(true);
     public static ImBoolean speedMutation = new ImBoolean(true);
     public static ImBoolean neuronASMutation = new ImBoolean(true);
+    public static ImBoolean simpleVision = new ImBoolean(false);
+    public static ImBoolean depthVision = new ImBoolean(true);
 
     public static Rectangle spawnArea = new Rectangle(0, 0, mapSize, mapSize);
 

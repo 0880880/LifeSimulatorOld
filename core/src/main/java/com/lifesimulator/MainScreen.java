@@ -126,17 +126,17 @@ public class MainScreen implements Screen {
 		updateCreatures();
 		timer++;
 		otimer++;
-        if (otimer % obstacleSpawnInterval.get() == 0) {
+        if (otimer % obstacleSpawnInterval.get() == 0 && obstacles.size < maxObstacles.get()) {
             Circle obstacle = new Circle(MathUtils.random(0,mapSize), MathUtils.random(0,mapSize), MathUtils.random(1,10));
-            float x = obstacle.x;
-            float y = obstacle.y;
-            float radius = obstacle.radius;
             obstacles.add(obstacle);
         }
-        if (timer >= foodSpawnInterval.get()) {
+        if (timer >= foodSpawnInterval.get() && food.size < maxFood.get()) {
             timer -= foodSpawnInterval.get();
             for (int k = 0; k < foodSpawnAmount.get(); k++) {
-                Utils.addFood(new Vector2(MathUtils.random(0,mapSize), MathUtils.random(0,mapSize)));
+                if (food.size < maxFood.get())
+                    Utils.addFood(new Vector2(MathUtils.random(0,mapSize), MathUtils.random(0,mapSize)));
+                else
+                    break;
             }
         }
 
@@ -198,9 +198,7 @@ public class MainScreen implements Screen {
 
     void thread() {
         stopSimulation = false;
-        new Thread(() -> {
-            tc();
-        }).start();
+        new Thread(this::tc).start();
     }
 
     int editing = 0;
@@ -337,7 +335,6 @@ public class MainScreen implements Screen {
 		ImGui.begin("Settings");
 
         if (ImGui.treeNodeEx("Creature", ImGuiTreeNodeFlags.DefaultOpen)) {
-
             ImGui.checkbox("Change Position", changePosition);
             if (ImGui.isItemHovered())
                 ImGui.setTooltip("Every 300 frames the position of obstacles and creatures with be reset");
@@ -347,7 +344,8 @@ public class MainScreen implements Screen {
             ImGui.checkbox("Oscillator Input", oscillatorInput);
             ImGui.checkbox("Speed Mutation", speedMutation);
             ImGui.checkbox("Neuron Addition/Subtraction Mutation", neuronASMutation);
-            ImGui.checkbox("Depth Vision", neuronASMutation);
+            ImGui.checkbox("Simple Vision", simpleVision);
+            ImGui.checkbox("Depth Vision", depthVision);
             ImGui.setNextItemWidth(120);
             ImGui.inputInt("Display Size", creatureDisplaySize);
             ImGui.setNextItemWidth(120);
@@ -384,6 +382,13 @@ public class MainScreen implements Screen {
             ImGui.inputFloat("Food Consumption Energy Gain", foodConsumptionGain);
             ImGui.setNextItemWidth(120);
             ImGui.inputInt("Max creatures", maxCreatures);
+            ImGui.setNextItemWidth(120);
+            ImGui.inputInt("Max Food", maxFood);
+            ImGui.setNextItemWidth(120);
+            ImGui.inputInt("Max Obstacles", maxObstacles);
+
+            if (ImGui.button("Remove Every Food", 170, 20)) food.clear();
+            if (ImGui.button("Remove Every Obstacle", 170, 20)) obstacles.clear();
 
             if (ImGui.treeNode("Areas")) {
 
