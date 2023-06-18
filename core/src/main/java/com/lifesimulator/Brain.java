@@ -141,7 +141,7 @@ public class Brain {
 
     public void mutate() {
         for (Connection c : connections) {
-            if (MathUtils.randomBoolean(Statics.mutationRate.get())) { // DEFAULT CHANCE .003f
+            if (MathUtils.randomBoolean(Statics.mutationChance.get())) { // DEFAULT CHANCE .003f
                 c.weight = Math.random() * 2.0 - 1.0;
                 evolved = true;
             }

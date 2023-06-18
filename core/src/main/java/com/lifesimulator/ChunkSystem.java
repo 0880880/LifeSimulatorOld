@@ -34,9 +34,19 @@ public class ChunkSystem {
     }
 
     public void remove(Chunkable chunkable) {
-        int x = (int) (chunkable.getPosition().x / chunkSizeX);
-        int y = (int) (chunkable.getPosition().y / chunkSizeY);
-        chunks[Math.min(x, chunks.length - 1)][Math.min(y, chunks[0].length - 1)].removeValue(chunkable, true);
+        boolean d = false;
+        for (int i = 0; i < chunks.length; i++) {
+            for (int j = 0; j < chunks[0].length; j++) {
+                if (chunks[i][j].contains(chunkable, true)) {
+                    int idx = chunks[i][j].indexOf(chunkable, true);
+                    chunks[i][j].removeIndex(idx);
+                    d = true;
+                    break;
+                }
+                if (d) break;
+            }
+            if (d) break;
+        }
     }
 
     public void update() {
@@ -58,9 +68,10 @@ public class ChunkSystem {
     }
 
     public Array<Array<Chunkable>> getChunksInRange(Vector2 position, int r) {
-        int x = (int) (position.x / chunkSizeX);
-        int y = (int) (position.y / chunkSizeY);
-        int range = r / chunkSizeX;
+        int x = (int) Math.ceil(position.x / chunkSizeX);
+        int y = (int) Math.ceil(position.y / chunkSizeY);
+        int range = (int) Math.ceil(r / (float) chunkSizeX);
+        range = Math.max(range, 4);
         Array<Array<Chunkable>> chunks = new Array<>();
         for (int i = x - range / 2; i < x + range / 2; i++) {
             for (int j = y - range / 2; j < y + range / 2; j++) {
@@ -70,6 +81,16 @@ public class ChunkSystem {
             }
         }
         return chunks;
+    }
+
+    public void clear() {
+        for (int i = 0; i < chunks.length; i++) {
+            for (int j = 0; j < chunks[0].length; j++) {
+                for (int k = 0; k < chunks[i][j].size; k++) {
+                    chunks[i][j].removeValue(chunks[i][j].get(k), true);
+                }
+            }
+        }
     }
 
 }
