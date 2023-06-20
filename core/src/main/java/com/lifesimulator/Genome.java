@@ -12,13 +12,14 @@ import lombok.RequiredArgsConstructor;
 public class Genome {
 
     public int neurons;
+    public int connections;
     public float colorHue = MathUtils.random(0f,1f);
     public float colorSaturation = MathUtils.random(0f,1f);
     public float colorValue = MathUtils.random(0f,1f);
-    public int speed = 1;
 
-    public Genome(int neurons) {
+    public Genome(int neurons, int connections) {
         this.neurons = neurons;
+        this.connections = connections;
     }
 
 }

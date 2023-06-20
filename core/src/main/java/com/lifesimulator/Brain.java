@@ -15,7 +15,7 @@ public class Brain {
     int hiddenSize = 0;
     int outputSize = 0;
 
-    public Brain(int inputSize, int hiddenSize, int outputSize) {
+    public Brain(int inputSize, int hiddenSize, int outputSize, int nConnecctions) {
         this.inputSize = inputSize;
         this.hiddenSize = hiddenSize;
         this.outputSize = outputSize;
@@ -39,15 +39,16 @@ public class Brain {
             neurons.add(neuron);
             outputNeurons[i] = neuron;
         }
-
-        for (int i = 0; i < neurons.size; i++) {
-            for (int j = 0; j < neurons.size; j++) {
-                if (!neurons.get(i).output && !neurons.get(j).input) {
-                    Connection c = new Connection(neurons.get(i), neurons.get(j), Math.random() * 2.0 - 1.0);
-                    connections.add(c);
-                    neurons.get(i).connections.add(c);
-                    neurons.get(j).connections.add(c);
-                }
+        for (int k = 0; k < nConnecctions; k++) {
+            int i = MathUtils.random(0, neurons.size - 1);
+            int j = MathUtils.random(0, neurons.size - 1);
+            if (!neurons.get(i).output && !neurons.get(j).input) {
+                Connection c = new Connection(neurons.get(i), neurons.get(j), Math.random() * 2.0 - 1.0);
+                connections.add(c);
+                neurons.get(i).connections.add(c);
+                neurons.get(j).connections.add(c);
+            } else {
+                k--;
             }
         }
 
@@ -55,7 +56,7 @@ public class Brain {
 
     public boolean evolved = false;
 
-    public Brain(Brain brainA, int caNeurons) {
+    public Brain(Brain brainA, int caNeurons, int nConnecctions) {
         this.inputSize = brainA.inputSize;
         this.hiddenSize = caNeurons;
         this.outputSize = brainA.outputSize;
@@ -80,7 +81,7 @@ public class Brain {
             outputNeurons[i] = neuron;
         }
 
-        int idx = 0;
+        /*int idx = 0;
         for (int i = 0; i < neurons.size; i++) {
             for (int j = 0; j < neurons.size; j++) {
                 if (!neurons.get(i).output && !neurons.get(j).input) {
@@ -90,6 +91,20 @@ public class Brain {
                     neurons.get(j).connections.add(c);
                     idx++;
                 }
+            }
+        }*/
+        int idx = 0;
+        for (int k = 0; k < nConnecctions; k++) {
+            int i = MathUtils.random(0, neurons.size - 1);
+            int j = MathUtils.random(0, neurons.size - 1);
+            if (!neurons.get(i).output && !neurons.get(j).input) {
+                Connection c = new Connection(neurons.get(i), neurons.get(j), brainA.connections.get(idx).weight);
+                connections.add(c);
+                neurons.get(i).connections.add(c);
+                neurons.get(j).connections.add(c);
+                idx++;
+            } else {
+                k--;
             }
         }
 

@@ -40,6 +40,7 @@ public class MainScreen implements Screen {
     float[] population = new float[1];
     float[] performance = new float[1];
     float[] deathRate = new float[1];
+    float[] birthRate = new float[1];
 
 	boolean threaded = false;
 
@@ -73,6 +74,7 @@ public class MainScreen implements Screen {
 		population = new float[] {maxCreatures.get()};
         performance = new float[] {0};
         deathRate = new float[] {0};
+        birthRate = new float[] {0};
 
 		for (int i = 0; i < 20; i++) {
             Utils.addFood(new Food(MathUtils.random(foodSpawnArea.x, foodSpawnArea.width), MathUtils.random(foodSpawnArea.y, foodSpawnArea.height)));
@@ -120,6 +122,7 @@ public class MainScreen implements Screen {
                 Creature c = new Creature(creature, creature.x + 1, creature.y);
                 Utils.addCreature(creatures, c);
                 chunks.add(c);
+                bRate++;
                 creature.energy -= creatureBaseEnergy.get() + 4;
             }
             creature.update();
@@ -134,9 +137,11 @@ public class MainScreen implements Screen {
 	}
 
     int dRate = 0;
+    int bRate = 0;
 
 	void simulate() {
         dRate = 0;
+        bRate = 0;
 		updateCreatures();
 		timer++;
 		otimer++;
@@ -198,6 +203,17 @@ public class MainScreen implements Screen {
             c[k] = newDeathRate.get(k);
         }
         deathRate = c;
+
+        ArrayList<Float> newBirthRate = new ArrayList<>();
+        for (int k = (birthRate.length < 200 ? 0 : 1); k < birthRate.length; k++) {
+            newBirthRate.add(birthRate[k]);
+        }
+        newBirthRate.add((float) bRate);
+        c = new float[newBirthRate.size()];
+        for (int k = 0; k < newBirthRate.size(); k++) {
+            c[k] = newBirthRate.get(k);
+        }
+        birthRate = c;
 	}
 
     public static float[] eye = new float[visionRays.get() * 4];
@@ -221,6 +237,13 @@ public class MainScreen implements Screen {
                 threaded = true;
                 double start = System.currentTimeMillis();
                 simulate();
+                delay = (float) (System.currentTimeMillis() - start);
+                try {
+                    if (simulationSpeed[0] == 2) Thread.sleep((long) delay);
+                    if (simulationSpeed[0] == 3) Thread.sleep((long) delay * 3);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
                 delay = (float) (System.currentTimeMillis() - start);
                 threadMemoryLifetime++;
             }
@@ -253,6 +276,8 @@ public class MainScreen implements Screen {
     Vector3 v3t = new Vector3();
 
     public static Vector2[] points = new Vector2[visionRays.get()];
+
+    int[] simulationSpeed = new int[] {1};
 
 	@Override
 	public void render(float delta) {
@@ -391,15 +416,17 @@ public class MainScreen implements Screen {
             ImGui.checkbox("Can See Other Creatures", canSeeOthers);
             ImGui.checkbox("Position Input", positionInput);
             ImGui.checkbox("Oscillator Input", oscillatorInput);
-            ImGui.checkbox("Speed Mutation", speedMutation);
-            ImGui.checkbox("Neuron Addition/Subtraction Mutation", neuronASMutation);
-            ImGui.checkbox("Simple Vision", simpleVision);
-            ImGui.checkbox("Depth Vision", depthVision);
+            ImGui.checkbox("Speed Control Ability", speedControlAbility);
+            ImGui.checkbox("Neuron Addition/Subtraction Mutations", neuronASMutation);
+            ImGui.checkbox("Simple Vision (Recommended)", simpleVision);
+            ImGui.checkbox("Depth Vision (Recommended)", depthVision);
             ImGui.checkbox("Defecation Ability", defecationAbility);
             ImGui.setNextItemWidth(120);
             ImGui.inputInt("Display Size", creatureDisplaySize);
             ImGui.setNextItemWidth(120);
             ImGui.inputInt("Number of hidden neurons", numberOfHiddenNeurons);
+            ImGui.setNextItemWidth(120);
+            ImGui.inputInt("Number of connections", numberOfConnections);
             ImGui.setNextItemWidth(120);
             ImGui.inputFloat("Mutation Chance", mutationChance);
             ImGui.setNextItemWidth(120);
@@ -488,8 +515,11 @@ public class MainScreen implements Screen {
 
             if (ImGui.treeNode("Radiation")) {
 
+                ImGui.setNextItemWidth(120);
                 ImGui.inputFloat("Background Radiation", backgroundRadiation);
+                ImGui.setNextItemWidth(120);
                 ImGui.inputFloat("Radiation Coefficient", backgroundRadiation);
+                ImGui.setNextItemWidth(120);
                 ImGui.inputFloat("Radiation Area Intensity", backgroundRadiation);
 
                 ImGui.beginDisabled(fEdit || tEdit || edit || rEdit);
@@ -513,6 +543,8 @@ public class MainScreen implements Screen {
         if (ImGui.treeNodeEx("Simulation", ImGuiTreeNodeFlags.DefaultOpen)) {
 
             ImGui.checkbox("Restart Simulation If Simulation Ended", restartSimulationIfEnded);
+            ImGui.setNextItemWidth(120);
+            ImGui.sliderInt("Simulation Speed",  simulationSpeed, 1, 3, simulationSpeed[0] == 1 ? "Full" : "1/" + String.valueOf((simulationSpeed[0] - 1) * 2));
             ImGui.setNextItemWidth(120);
             ImGui.colorEdit3("Background Color", bgc);
             ImGui.setNextItemWidth(120);
@@ -584,11 +616,13 @@ public class MainScreen implements Screen {
 		ImGui.spacing();
 
         ImGui.plotLines("Population", population, population.length);
+        ImGui.plotLines("Death Rate", deathRate, deathRate.length);
+        ImGui.plotLines("Birth Rate", birthRate, birthRate.length);
+        ImGui.spacing();
         ImGui.plotLines("Performance", performance, performance.length);
         if (ImGui.isItemHovered()) {
             ImGui.setTooltip("Lower is better");
         }
-        ImGui.plotLines("Death Rate", deathRate, deathRate.length);
 
 		ImGui.spacing();
 

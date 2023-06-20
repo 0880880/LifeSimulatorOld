@@ -32,6 +32,7 @@ public class Statics {
 
     public static ImBoolean changePosition = new ImBoolean(false);
     public static ImInt numberOfHiddenNeurons = new ImInt(50);
+    public static ImInt numberOfConnections = new ImInt(100);
     public static ImInt creatureDisplaySize = new ImInt(5);
     public static ImFloat mutationChance = new ImFloat(.009f);
     public static ImFloat learningRate = new ImFloat(.001f);
@@ -43,11 +44,11 @@ public class Statics {
     public static ImInt foodSpawnInterval = new ImInt(10);
     public static ImInt obstacleSpawnInterval = new ImInt(100);
     public static ImInt foodSpawnAmount = new ImInt(20);
-    public static ImInt maxCreatures = new ImInt(500);
+    public static ImInt maxCreatures = new ImInt(750);
     public static ImInt maxFood = new ImInt(100);
     public static ImInt maxObstacles = new ImInt(100);
     public static ImInt visionRange = new ImInt(50);
-    public static ImInt visionRays = new ImInt(30);
+    public static ImInt visionRays = new ImInt(50);
     public static ImInt creatureLifespan = new ImInt(999999);
     public static ImInt energyCapacity = new ImInt(99999);
     public static ImInt wasteCapacity = new ImInt(100);
@@ -56,7 +57,7 @@ public class Statics {
     public static ImBoolean canSeeOthers = new ImBoolean(true);
     public static ImBoolean positionInput = new ImBoolean(false);
     public static ImBoolean oscillatorInput = new ImBoolean(true);
-    public static ImBoolean speedMutation = new ImBoolean(false);
+    public static ImBoolean speedControlAbility = new ImBoolean(false);
     public static ImBoolean neuronASMutation = new ImBoolean(true);
     public static ImBoolean simpleVision = new ImBoolean(true);
     public static ImBoolean depthVision = new ImBoolean(true);
