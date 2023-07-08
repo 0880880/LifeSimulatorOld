@@ -17,6 +17,7 @@ public class Creature implements Chunkable {
     public float direction;
 
     public Brain brain;
+    public Brain originalBrain;
 
     public Color color;
 
@@ -47,6 +48,7 @@ public class Creature implements Chunkable {
             genome.colorValue
         );
         brain = new Brain(2 + Statics.visionRays.get() * (eye ? 4 : 0) + 4 + 1 + 4 + 1 + 1, genome.neurons, 2 + 2 + 1, genome.connections);
+        originalBrain = brain;
         totalNeurons = brain.neurons.size;
     }
     public Creature(Creature creatureA, int x, int y) {
@@ -70,11 +72,12 @@ public class Creature implements Chunkable {
             if (MathUtils.randomBoolean(Statics.mutationChance.get())) {
                 genome.neurons++;
             } else {
-                if (MathUtils.randomBoolean(Statics.mutationChance.get()))
+                if (MathUtils.randomBoolean(Statics.mutationChance.get()) && genome.neurons > 2)
                     genome.neurons--;
             }
         }
-        brain = new Brain(creatureA.brain, genome.neurons, genome.connections);
+        brain = new Brain(creatureA.originalBrain, genome.neurons, genome.connections);
+        originalBrain = brain;
         totalNeurons = brain.neurons.size;
     }
     public Creature(Creature creatureA, Creature creatureB, int x, int y) {
@@ -188,7 +191,7 @@ public class Creature implements Chunkable {
             Array<Chunkable> chunk = chunks.get(i);
             for (int j = 0; j < chunk.size; j++) {
                 Chunkable chunkable = chunk.get(j);
-                if (chunkable != null && Utils.intersect(start, end, chunkable.getPosition(), .5f)) {
+                if (chunkable != null && Utils.intersect(start, end, chunkable.getPosition(), 1.5f)) {
                     foodDistance = (useDst2.get() ? start.dst2(chunkable.getPosition()) : start.dst(chunkable.getPosition()));
                     d = true;
                     break;

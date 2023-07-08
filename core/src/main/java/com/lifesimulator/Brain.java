@@ -169,6 +169,12 @@ public class Brain {
         }*/
     }
 
+    public void mutateC() {
+        Connection c = connections.get(MathUtils.random(connections.size - 1));
+        c.weight = Math.random() * 2.0 - 1.0;
+        evolved = true;
+    }
+
     public double processNeuron(Neuron neuron) {
         double value = 0;
         if (neuron.input) {

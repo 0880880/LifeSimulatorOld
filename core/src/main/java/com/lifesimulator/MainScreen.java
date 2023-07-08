@@ -126,6 +126,11 @@ public class MainScreen implements Screen {
                 creature.energy -= creatureBaseEnergy.get() + 4;
             }
             creature.update();
+            float areaRadiation = 0;
+            if (creature.x > radiationArea.x && creature.y > radiationArea.y && creature.x < radiationArea.width && creature.x < radiationArea.height) areaRadiation = radiationAreaIntensitity.get();
+            if (MathUtils.randomBoolean((backgroundRadiation.get() + areaRadiation) * radiationCoefficient.get())) {
+                creature.brain.mutateC();
+            }
             if (creature.energy <= 0) {
                 creatures.removeIndex(i);
                 creaturesIndex.remove(new Index(creature.x, creature.y));
@@ -518,9 +523,9 @@ public class MainScreen implements Screen {
                 ImGui.setNextItemWidth(120);
                 ImGui.inputFloat("Background Radiation", backgroundRadiation);
                 ImGui.setNextItemWidth(120);
-                ImGui.inputFloat("Radiation Coefficient", backgroundRadiation);
+                ImGui.inputFloat("Radiation Coefficient", radiationCoefficient);
                 ImGui.setNextItemWidth(120);
-                ImGui.inputFloat("Radiation Area Intensity", backgroundRadiation);
+                ImGui.inputFloat("Radiation Area Intensity", radiationAreaIntensitity);
 
                 ImGui.beginDisabled(fEdit || tEdit || edit || rEdit);
                 ImGui.checkbox("Enabled##rad", radiationEnabled);

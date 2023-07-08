@@ -41,6 +41,8 @@ public class Statics {
     public static ImFloat moveMetabolism = new ImFloat(1f);
     public static ImFloat creatureBaseEnergy = new ImFloat(34f);
     public static ImFloat backgroundRadiation = new ImFloat(0);
+    public static ImFloat radiationAreaIntensitity = new ImFloat(0);
+    public static ImFloat radiationCoefficient = new ImFloat(.05f);
     public static ImInt foodSpawnInterval = new ImInt(10);
     public static ImInt obstacleSpawnInterval = new ImInt(100);
     public static ImInt foodSpawnAmount = new ImInt(20);
